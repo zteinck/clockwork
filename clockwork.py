@@ -119,7 +119,7 @@ def elapsed_time(seconds):
         count = int(seconds / v)
         if count > 0:
             out.append(f'{count} {k}')
-            x -= count * v
+            seconds -= count * v
     out.append(f'{round(seconds, 2)} seconds')
     return ', '.join(out)
 
