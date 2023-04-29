@@ -487,11 +487,20 @@ class DateBase(object):
             }[self.dt.weekday()]
         return out
 
+    @property
+    def is_weekend(self):
+        ''' returns True if date does not fall on a weekend '''
+        return self.weekday in ('Saturday','Sunday')
+
+    @property
+    def is_holiday(self):
+        ''' returns True if date is a U.S. holiday '''
+        return self.sqlsvr in self.holidays
 
     @property
     def is_business_day(self):
         ''' returns True if date does not fall on a weekend '''
-        return self.weekday not in ('Saturday','Sunday')
+        return not (self.is_weekend or self.is_holiday)
 
     @property
     def is_business_hours(self):
@@ -501,22 +510,14 @@ class DateBase(object):
         return out
 
     @property
-    def is_holiday(self):
-        ''' returns True if date is a U.S. holiday '''
-        return self.sqlsvr in self.holidays
-
-
-    @property
     def is_today(self):
         ''' returns True if date is the current day '''
         return self.sqlsvr == Date().sqlsvr
-
 
     @property
     def holiday(self):
         ''' returns the current holiday, if applicable '''
         return self.holidays.get(self.sqlsvr)
-
 
     @property
     def is_quarter_end(self):
@@ -603,17 +604,16 @@ class DateBase(object):
 
 
     def business_day_delta(self, delta):
-        forward = True if delta >= 0 else False
-        if forward:
-            start, stop, step = 1, delta + 1, 1
-        else:
-            start, stop, step = -1, delta - 1, -1
+        out = Date(self.dt)
+        sign = np.sign(delta)
 
-        weekend_days = 0
-        for x in range(start, stop, step):
-            if (self.dt + datetime.timedelta(x)).weekday() in (5, 6):
-                weekend_days += 1
-        out = self.skip_weekend(self.dt + datetime.timedelta(delta + (weekend_days * step)), forward)
+        counter = 0
+        while counter < abs(delta):
+            out += sign
+            while not out.is_business_day:
+                out += sign
+            counter += 1
+
         return out
 
 
