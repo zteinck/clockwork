@@ -6,6 +6,7 @@ import re
 import datetime
 import time
 from textwrap import wrap as wrap_text
+from dateutil.relativedelta import relativedelta
 
 
 
@@ -623,47 +624,11 @@ class DateBase(object):
         else:
             return self
 
+    def shift(self, **kwargs):
+        return Date(self.dt + relativedelta(**kwargs))
 
-
-    def month_shift(self, n_months=0, month_end='', day=None):
-        '''
-        Description
-        ----------
-        returns Date instance representing current instance shifted by a specified number of months.
-        Note: If you want to shift by days use +/- operators. You could also achieve the same result
-        by using the plus and minus methods.
-
-        Parameters
-        ----------
-        n_months : int
-            number of months to shift. Positive values shift forward and negative shift backwards
-        month_end : bool
-            if True, the day is set equal to the last day of the month that was shifted to.
-            This cannot be set to True if a day argument is passed.
-        day : int
-            day of the month once the the shift takes place. Must be None if a month_end is True.
-
-        Returns
-        ----------
-        out : DateBase | DateBase polymorphism
-            date object
-        '''
-        if month_end and day is not None:
-            raise ValueError("cannot set 'month_end' to True and pass a 'day' argument simultaneously")
-        if n_months == 0:
-            y, m = self.year, self.month
-        else:
-            y, m = list(month_year_iter(start_month=self.month, start_year=self.year, rng=n_months))[-1]
-
-        d = n_days_in_month(y, m)
-        if day is not None:
-            if day > d or day < 1:
-                raise ValueError("day argument out of bounds")
-            else:
-                d = day
-
-        out = Date(datetime.datetime(y, m, d))
-        return out
+    def replace(self, **kwargs):
+        return Date(self.dt.replace(**kwargs))
 
     def str(self, fmt):
         ''' strftime shortcut '''
@@ -721,10 +686,16 @@ class MonthEnd(DateBase):
         ''' returns most recent quarter end '''
         delta = 0
         while True:
-            dt = self.shift(delta=delta)
-            if isinstance(dt, QuarterEnd): break
+            dt = self.offset(delta=delta)
+            if isinstance(dt, QuarterEnd): return dt
             delta -= 1
-        return dt
+
+    def offset(self, delta):
+        ''' returns the month end 'delta' months away from the instance '''
+        if not isinstance(delta, int): raise TypeError
+        if delta == 0: return self
+        dt = self.shift(months=delta).dt
+        return MonthEnd(dt)
 
 
 
@@ -753,6 +724,15 @@ class QuarterEnd(MonthEnd):
     @property
     def mid(self):
         return f'{self.qtr}Q{str(self.year)[2:]}'
+
+    def offset(self, delta):
+        ''' returns the quarter end 'delta' quarters away from the instance '''
+        if not isinstance(delta, int): raise TypeError
+        if delta == 0: return self
+        dt = self.shift(months=delta * 3).dt
+        qtr = ((self.qtr - 1 + delta) % 4) + 1
+        return QuarterEnd(dt, qtr)
+
 
 
 
