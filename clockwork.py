@@ -692,7 +692,8 @@ class MonthEnd(DateBase):
 
     def offset(self, delta):
         ''' returns the month end 'delta' months away from the instance '''
-        if not isinstance(delta, int): raise TypeError
+        if not isinstance(delta, int):
+            raise TypeError("'delta' argument must be an integer")
         if delta == 0: return self
         dt = self.shift(months=delta).dt
         return MonthEnd(dt)
@@ -727,7 +728,8 @@ class QuarterEnd(MonthEnd):
 
     def offset(self, delta):
         ''' returns the quarter end 'delta' quarters away from the instance '''
-        if not isinstance(delta, int): raise TypeError
+        if not isinstance(delta, int):
+            raise TypeError("'delta' argument must be an integer")
         if delta == 0: return self
         dt = self.shift(months=delta * 3).dt
         qtr = ((self.qtr - 1 + delta) % 4) + 1
