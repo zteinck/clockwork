@@ -242,8 +242,7 @@ def month_end(delta=0):
     if m == 0:
         y -= 1
         m = 12
-    d = n_days_in_month(y, m)
-    return MonthEnd(datetime.datetime(y, m, d))
+    return MonthEnd(datetime.datetime(y, m, 1))
 
 
 
@@ -277,9 +276,7 @@ def quarter_end(delta=0, scheme=None):
     candidates.insert(0,((cy - 1) * 12) + scheme[-1] + (delta * 3) - 1)
     y, m = divmod(candidates[np.digitize(((cy * 12) + cm + (delta * 3)), candidates, right=True) - 1], 12)
     m += 1
-    d = n_days_in_month(y, m)
-    quarter, quarter_date = scheme.index(m) + 1, datetime.datetime(y, m, d)
-    return QuarterEnd(quarter_date, quarter)
+    return QuarterEnd(dt=datetime.datetime(y, m, 1), qtr=scheme.index(m) + 1)
 
 
 
@@ -667,7 +664,7 @@ class DateBase(object):
 class MonthEnd(DateBase):
 
     def __init__(self, dt):
-        super().__init__(dt)
+        super().__init__(dt.replace(day=n_days_in_month(dt.year, dt.month)))
 
     @property
     def label(self):
