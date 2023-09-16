@@ -100,10 +100,13 @@ def Date(arg=None, normalize=False, week_offset=0):
 
 
 
-def add_border(text, width=75):
+def add_border(text, width=100):
     ''' adds a border around text '''
-    text = '\n '.join(wrap_text(' '.join(text.split()), width))
-    out = '{0}{1}{0}\n {2}\n{0}{1}{0}'.format('+', width * '-', text)
+    lines = wrap_text(' '.join(text.split()), width)
+    max_width = len(max(lines, key=len))
+    border = ('-' * (max_width + 2)).join(['+'] * 2)
+    content = '\n'.join(('| ' + line + ''.join([' '] * (max_width - len(line))) + ' |') for line in lines)
+    out = '\n'.join([border, content, border])
     return out
 
 
