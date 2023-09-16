@@ -100,13 +100,45 @@ def Date(arg=None, normalize=False, week_offset=0):
 
 
 
-def add_border(text, width=100):
-    ''' adds a border around text '''
+def add_border(text, width=100, fixed_width=False, align='left'):
+    '''
+    Description
+    ----------
+    Adds a border around text.
+
+    Parameters
+    ----------
+    text : str
+        text to encase
+    width : int
+        wrap_text width argument. If width=1, the text is printed vertically.
+    fixed_width : bool
+        • True -> the width of the border will equal the 'width' argument value.
+        • False -> the width of the border is capped at the length of the longest
+                   line in the text.
+    align : str
+        • 'left' -> aligns text along the left margin
+        • 'center' -> aligns text in the center between the left and right margins
+        • 'right' -> aligns text along the right margin
+
+    Returns
+    ----------
+    out : str
+        text encased within a border
+    '''
     lines = wrap_text(' '.join(text.split()), width)
-    max_width = len(max(lines, key=len))
+    max_width = width if fixed_width else len(max(lines, key=len))
     border = ('-' * (max_width + 2)).join(['+'] * 2)
-    content = '\n'.join(('| ' + line + ''.join([' '] * (max_width - len(line))) + ' |') for line in lines)
-    out = '\n'.join([border, content, border])
+
+    if align in 'left':
+        content = [('| ' + line + ''.join([' '] * (max_width - len(line))) + ' |') for line in lines]
+    elif align == 'right':
+        content = [('| ' + ''.join([' '] * (max_width - len(line))) + line + ' |') for line in lines]
+    elif align == 'center':
+        content = [('| ' + ''.join([' '] * ((max_width - len(line)) // 2)) + line +
+                           ''.join([' '] * ((max_width - len(line) + 1) // 2)) + ' |') for line in lines]
+
+    out = '\n'.join([border, '\n'.join(content), border])
     return out
 
 
