@@ -273,6 +273,7 @@ def month_end(delta=0):
     ----------
     clockwork.MonthEnd object
     '''
+    if isinstance(delta, (DateBase, str)): return Date(delta)
     y, m = divmod(datetime.date.today().year * 12 + datetime.date.today().month + delta - 1, 12)
     if m == 0:
         y -= 1
@@ -289,7 +290,7 @@ def quarter_end(delta=0, scheme=None):
 
     Parameters
     ----------
-    delta : int | str
+    delta : int | str | DateBase
         clockwork.date() -> 'date' argument.
         Integer values are treated as offsets +/- from the most recent quarter end (e.g. 0 is the most recent quarter
         end and -1 is the 2nd most recent quarter end).
@@ -301,7 +302,7 @@ def quarter_end(delta=0, scheme=None):
     ----------
     clockwork.QuarterEnd object
     '''
-    if isinstance(delta, str): return Date(delta)
+    if isinstance(delta, (DateBase, str)): return Date(delta)
     if scheme is not None: raise NotImplementedError
     scheme = (3, 6, 9, 12)
     today = datetime.datetime.now()
@@ -766,11 +767,6 @@ class QuarterEnd(MonthEnd):
         dt = self.shift(months=delta * 3).dt
         qtr = ((self.qtr - 1 + delta) % 4) + 1
         return QuarterEnd(dt, qtr)
-
-
-
-
-
 
 
 
