@@ -266,7 +266,7 @@ def month_end(delta=0):
 
     Parameters
     ----------
-    delta : int
+    delta : int | str | DateBase
         Offset value +/- from the most recent month end (e.g. 0 is the most recent month end and -1 is the 2nd most recent month end).
 
     Returns
