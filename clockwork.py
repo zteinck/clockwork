@@ -715,7 +715,7 @@ class MonthEnd(DateBase):
         return self.str('%b%y')
 
     @property
-    def last_qtr(self):
+    def last_quarter_end(self):
         ''' returns most recent quarter end '''
         delta = 0
         while True:
@@ -758,6 +758,9 @@ class QuarterEnd(MonthEnd):
     @property
     def mid(self):
         return f'{self.qtr}Q{str(self.year)[2:]}'
+
+    def to_month_end(self):
+        return MonthEnd(self.dt)
 
     def offset(self, delta):
         ''' returns the quarter end 'delta' quarters away from the instance '''
