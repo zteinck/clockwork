@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "clockwork"
+version = "0.1.0"
+description = "Toolkit for time-related operations including scheduling, logging, date manipulation, and more."
+authors = ["Zachary Einck <zacharyeinck@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/zteinck/clockwork"
+homepage = "https://github.com/zteinck/clockwork"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+iterlab = "*"
+pathpilot = "*"
+schedule = "*"
+holidays = "*"
+textwrap3 = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

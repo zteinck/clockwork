@@ -1,6 +1,6 @@
 import logging
 import datetime
-from pathfinder import Folder
+from pathpilot import Folder
 
 
 class CustomLogFormatter(logging.Formatter):

@@ -1,3 +1,7 @@
+from clockwork import Date, elapsed_time
+from iterlab import to_iter
+from pathpilot import Folder
+from clockwork.chronicle import Logger
 from contextlib import redirect_stdout
 from schedule import Scheduler, CancelJob
 import datetime
@@ -5,10 +9,6 @@ import time
 import uuid
 import os
 
-from clockwork import Date, elapsed_time
-from iterkit import to_iter
-from pathfinder import Folder
-from clockwork.chronicle import Logger
 
 
 
