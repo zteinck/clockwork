@@ -427,16 +427,19 @@ class DateBase(object):
             return wrapper
 
 
-
-    #+---------------------------------------------------------------------------+
-    # Class Methods
-    #+---------------------------------------------------------------------------+
-    # None
-
-
     #+---------------------------------------------------------------------------+
     # Properties
     #+---------------------------------------------------------------------------+
+
+    @property
+    def date(self):
+        ''' returns normalized instance '''
+        return self.normalize()
+    
+    @property
+    def d(self):
+        ''' converts datetime.datetime to datetime.date '''
+        return self.datetime.date()
 
     @property
     def dt(self):
@@ -449,14 +452,14 @@ class DateBase(object):
         return pd.to_datetime(self.dt)
 
     @property
-    def sql_server(self):
+    def ymd(self):
         ''' string in YYYY-MM-DD format '''
         return self.str('%Y-%m-%d')
 
     @property
-    def sqlsvr(self):
-        ''' sql_server alias '''
-        return self.sql_server
+    def sql_server(self):
+        ''' ymd alias '''
+        return self.ymd
 
     @property
     def oracle(self):
@@ -562,7 +565,6 @@ class DateBase(object):
     def is_month_end(self):
         '''' returns True if the date is a month end date '''
         return isinstance(Date(self.sqlsvr), MonthEnd)
-
 
 
     #+---------------------------------------------------------------------------+
@@ -703,16 +705,16 @@ class MonthEnd(DateBase):
         super().__init__(dt.replace(day=n_days_in_month(dt.year, dt.month)))
 
     @property
-    def label(self):
-        return self.str('%Y%b')
+    def long(self):
+        return self.str('%Y-%m-%d')
+
+    @property
+    def compact(self):
+        return self.str('%Y-%m')
 
     @property
     def short(self):
-        return self.str('%b-%y')
-
-    @property
-    def mid(self):
-        return self.str('%b%y')
+        return self.str('%b')
 
     @property
     def last_quarter_end(self):
@@ -740,24 +742,20 @@ class QuarterEnd(MonthEnd):
         self.qtr = qtr
 
     @property
-    def label(self):
+    def long(self):
         return f'{self.year}Q{self.qtr}'
 
     @property
-    def strqtr(self):
-        return self.label
-
-    @property
-    def quarter(self):
-        return self.qtr
+    def compact(self):
+        return f'{self.qtr}Q' + self.str('%y')
 
     @property
     def short(self):
         return f'Q{self.qtr}'
 
     @property
-    def mid(self):
-        return f'{self.qtr}Q{str(self.year)[2:]}'
+    def quarter(self):
+        return self.qtr
 
     def to_month_end(self):
         return MonthEnd(self.dt)
@@ -770,11 +768,3 @@ class QuarterEnd(MonthEnd):
         dt = self.shift(months=delta * 3).dt
         qtr = ((self.qtr - 1 + delta) % 4) + 1
         return QuarterEnd(dt, qtr)
-
-
-
-
-
-
-if __name__ == '__main__':
-    pass

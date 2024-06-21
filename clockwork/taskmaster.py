@@ -1,14 +1,14 @@
-from clockwork import Date, elapsed_time
-from iterlab import to_iter
-from pathpilot import Folder
-from clockwork.chronicle import Logger
-from contextlib import redirect_stdout
-from schedule import Scheduler, CancelJob
 import datetime
 import time
 import uuid
 import os
+from contextlib import redirect_stdout
+from schedule import Scheduler, CancelJob
+from iterlab import to_iter
+from pathpilot import Folder
 
+from .core import Date, elapsed_time
+from .chronicle import Logger
 
 
 
