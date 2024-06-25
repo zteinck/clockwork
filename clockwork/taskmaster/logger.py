@@ -3,6 +3,10 @@ import datetime
 from pathpilot import Folder
 
 
+#╭-------------------------------------------------------------------------╮
+#| Classes                                                                 |
+#╰-------------------------------------------------------------------------╯
+
 class CustomLogFormatter(logging.Formatter):
     ''' the default implementation of logging.Formatter does not allow timestamps to be formatted how I want '''
 
@@ -16,7 +20,16 @@ class CustomLogFormatter(logging.Formatter):
 
 class Logger(object):
 
+    #╭-------------------------------------------------------------------------╮
+    #| Class Attributes                                                        |
+    #╰-------------------------------------------------------------------------╯
+
     instances = {}
+
+
+    #╭-------------------------------------------------------------------------╮
+    #| Class Methods                                                           |
+    #╰-------------------------------------------------------------------------╯
 
     @classmethod
     def load(cls, name, *args, **kwargs):
@@ -24,6 +37,10 @@ class Logger(object):
             cls.instances[name] = cls(name, *args, **kwargs)
         return cls.instances[name]
 
+
+    #╭-------------------------------------------------------------------------╮
+    #| Initialize Instance                                                     |
+    #╰-------------------------------------------------------------------------╯
 
     def __init__(self, name, clear=False, stream_handler=False):
         self.name = name
@@ -58,6 +75,10 @@ class Logger(object):
         self.logger = logger
 
 
+    #╭-------------------------------------------------------------------------╮
+    #| Magic Methods                                                           |
+    #╰-------------------------------------------------------------------------╯
+
     def __getitem__(self, name):
         return self.__dict__[name].logger
 
@@ -72,15 +93,22 @@ class Logger(object):
 
 
 
+#╭-------------------------------------------------------------------------╮
+#| Functions                                                               |
+#╰-------------------------------------------------------------------------╯
+
 def log(logger=None):
     ''' Logs decorated function using the passed logging.Logger object.
     If None, a logger object is created (or loaded if already exists)
     using the decorated function's name. '''
+
     def decorator(func):
+
         def wrapper(*args, **kwargs):
             nonlocal logger
             logger = logger or Logger.load(func.__name__).logger
             logger.info('start')
+
             try:
                 out = func(*args, **kwargs)
                 logger.info('complete')
@@ -88,10 +116,7 @@ def log(logger=None):
             except Exception as e:
                 logger.exception('exception')
                 return e
+
         return wrapper
+
     return decorator
-
-
-
-if __name__ == '__main__':
-    pass
