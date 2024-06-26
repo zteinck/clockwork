@@ -30,7 +30,7 @@ def Date(arg=None, normalize=False, week_offset=0):
             • string
                 ► day of the week fully spelled out or first 3 letters (not case sensitive)
                   (e.g. 'Monday', 'monday', 'mon')
-                ► quarter in #QYY or YYYYQ# format
+                ► quarter in #QYY, YYYYQ#, or Q# format
                 ► any string format supported by pd.to_datetime
             • DateBase object or DateBase polymorphism
     normalize : bool
@@ -51,15 +51,20 @@ def Date(arg=None, normalize=False, week_offset=0):
     def qtr_label_to_dt(x):
         ''' attempts to convert quarter expressed as string to datetime.
             Suported formats include #QYY and YYYYQ# '''
+        x = x.upper()
         try:
-            qtr, year = re.findall(r'(\d{1})Q(\d{2})', x)[0]
+            qtr, year = re.findall(r'^(\d{1})Q(\d{2})$', x)[0]
         except:
             try:
-                year, qtr = re.findall(r'(\d{4})Q(\d{1})', x)[0]
+                year, qtr = re.findall(r'^(\d{4})Q(\d{1})$', x)[0]
             except:
-                return
+                try:
+                    qtr = re.findall(r'^Q(\d{1})$', x)[0]
+                    year = datetime.datetime.now().year
+                except:
+                    return
 
-        inverse = {v: k for k,v in qtr_map.items()}
+        inverse = {v: k for k, v in qtr_map.items()}
         month, day = inverse[int(qtr)]
         out = DateBase.to_datetime(f'{month}-{day}-{year}')
         return out
