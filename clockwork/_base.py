@@ -1,9 +1,8 @@
 import datetime
 import calendar
 import time
-from functools import cached_property
 from dateutil.relativedelta import relativedelta
-import holidays
+import holidays as hd
 import pandas as pd
 import numpy as np
 
@@ -19,12 +18,26 @@ class DateBase(object):
     --------------------
     factory : func
         initializes new instances as the correct subclass
+    weekdays : dict
+        dictionary where keys are the days of the week and values
+        are the corresponding index values
+    holidays : holidays.countries.united_states.UnitedStates
+        comprehensive list of U.S. holidays
 
     Instance Attributes
     --------------------
     datetime : datetime.datetime
         date and time (if applicable)
     '''
+
+    #╭-------------------------------------------------------------------------╮
+    #| Class Attributes                                                        |
+    #╰-------------------------------------------------------------------------╯
+
+    holidays = hd.UnitedStates()
+    weekdays = {k: i for i, k in enumerate(calendar.day_name)}
+    weekdays.update({k[:3]: v for k, v in weekdays.items()})
+
 
     #╭-------------------------------------------------------------------------╮
     #| Initialize Instance                                                     |
@@ -119,7 +132,7 @@ class DateBase(object):
             ''' spawn new date instance '''
 
             def wrapper(self, *args, **kwargs):
-                return cls.spawn(func(self, *args, **kwargs))
+                return self.spawn(func(self, *args, **kwargs))
 
             return wrapper
 
@@ -145,9 +158,9 @@ class DateBase(object):
             def wrapper(self, other):
                 try:
                     other = datetime.timedelta(float(other))
-                    return cls.spawn(func(self, other))
+                    return self.spawn(func(self, other))
                 except:
-                    other = cls.spawn(other).dt
+                    other = self.spawn(other).dt
                     return func(self, other)
 
             return wrapper
@@ -299,20 +312,6 @@ class DateBase(object):
     def holiday(self):
         ''' returns the current holiday, if applicable '''
         return self.holidays.get(self.ymd)
-
-    @cached_property
-    def weekdays(self):
-        ''' dictionary where keys are the days of the week and values are the corresponding index values '''
-        out = {k: i for i, k in enumerate((
-            'Monday','Tuesday','Wednesday','Thursday',
-            'Friday','Saturday','Sunday'))}
-        out.update({k[:3]: v for k, v in out.items()})
-        return out
-
-    @cached_property
-    def holidays(self):
-        ''' comprehensive list of U.S. holidays '''
-        return holidays.UnitedStates()
 
 
     #╭-------------------------------------------------------------------------╮
