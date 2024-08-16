@@ -325,7 +325,7 @@ class DateBase(object):
         components = ['%Y-%m-%d']
         if self.dt.hour + self.dt.second + self.dt.microsecond > 0:
             components.append('%I:%M:%S.%f %p')
-        return self.str(' '.join(components))
+        return self.__class__.__name__ + '(%s)' % self.str(' '.join(components))
 
     def __int__(self):
         return self.timestamp
