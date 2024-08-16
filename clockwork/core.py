@@ -12,7 +12,7 @@ from ._month_end import MonthEnd
 #| Functions                                                               |
 #╰-------------------------------------------------------------------------╯
 
-def Date(arg=None, normalize=False, week_offset=0):
+def Date(arg=None, normalize=False, format=None, week_offset=0):
     '''
     Description
     ------------
@@ -35,6 +35,8 @@ def Date(arg=None, normalize=False, week_offset=0):
             • DateBase object or DateBase polymorphism
     normalize : bool
         if True, only the year, month, and day are retained (hours, minutes, seconds, microseconds are set to zero)
+    format : str
+        if 'arg' is a string, this format is used to parse it (e.g. '%Y%m%d %H%S').
     week_offset : int
         by default, if a day of the week is supplied (e.g. 'Monday') then the date returned will be that day of the week
         for the current week. This argument is used to override this behavior by shifting the week backwards or forwards
@@ -69,6 +71,12 @@ def Date(arg=None, normalize=False, week_offset=0):
         out = DateBase.to_datetime(f'{month}-{day}-{year}')
         return out
 
+
+    if format is not None:
+        if not isinstance(arg, str):
+            raise TypeError(f"When 'format' argument is not None, 'arg' must be a string, not {type(arg)}.")
+        arg = DateBase.to_datetime(arg, format=format)
+        return Date(arg, normalize=normalize)
 
     if arg is None:
         dt = datetime.datetime.now()
