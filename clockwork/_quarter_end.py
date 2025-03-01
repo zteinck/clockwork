@@ -5,12 +5,17 @@ from ._month_end import MonthEnd
 class QuarterEnd(MonthEnd):
 
     #╭-------------------------------------------------------------------------╮
+    #| Class Attributes                                                        |
+    #╰-------------------------------------------------------------------------╯
+    scheme = (3, 6, 9, 12)
+
+
+    #╭-------------------------------------------------------------------------╮
     #| Initialize Instance                                                     |
     #╰-------------------------------------------------------------------------╯
 
-    def __init__(self, dt, qtr, *args, **kwargs):
+    def __init__(self, dt):
         super().__init__(dt)
-        self.qtr = qtr
 
 
     #╭-------------------------------------------------------------------------╮
@@ -21,17 +26,26 @@ class QuarterEnd(MonthEnd):
     def long(self):
         return f'{self.year}Q{self.qtr}'
 
+
     @property
     def compact(self):
         return f'{self.qtr}Q' + self.str('%y')
+
 
     @property
     def short(self):
         return f'Q{self.qtr}'
 
+
     @property
     def quarter(self):
-        return self.qtr
+        return int(self.scheme.index(self.month) + 1)
+
+
+    @property
+    def qtr(self):
+        ''' quarter alias '''
+        return self.quarter
 
 
     #╭-------------------------------------------------------------------------╮
