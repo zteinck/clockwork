@@ -63,4 +63,4 @@ class QuarterEnd(MonthEnd):
         if delta == 0: return self
         dt = self.shift(months=delta * 3).dt
         qtr = ((self.qtr - 1 + delta) % 4) + 1
-        return self.__class__(dt, qtr)
+        return self.__class__(dt)
