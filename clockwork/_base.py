@@ -71,7 +71,8 @@ class DateBase(object):
         Description
         ----------
         Returns the # of days in a month for a given year.
-        For example, if year=2024 and month=2, 29 days is returned since it's a leap year
+        For example, if year=2024 and month=2, 29 days is returned since
+        it's a leap year.
 
         Parameters
         ----------
@@ -172,15 +173,18 @@ class DateBase(object):
 
             def wrapper(self, weekday, delta=0):
                 '''
-                returns DateBase object representing the next or last day of the week relative to self. For example self.next('Mon')
+                returns DateBase object representing the next or last day of
+                the week relative to self. For example self.next('Mon')
                 would return the date of the following monday.
 
                 Attributes
                 -----------------------
                 weekday : str
-                    Day of the week either fully spelled out or the first three characters (e.g. 'Friday' or 'Fri') not case-sensitive.
+                    Day of the week either fully spelled out or the first three
+                    characters (e.g. 'Friday' or 'Fri') not case-sensitive.
                 delta : int
-                    Offset value +/- from the current week (e.g. 0 is the current week and -1 is last week).
+                    Offset value +/- from the current week (e.g. 0 is the current
+                    week and -1 is last week).
                 '''
                 day, desired_day = self.dt.weekday(), self.weekdays[weekday.title()]
                 delta += func(self, day - desired_day)
@@ -198,74 +202,96 @@ class DateBase(object):
         ''' returns normalized instance '''
         return self.normalize()
 
+
     @property
     def d(self):
         ''' converts datetime.datetime to datetime.date '''
         return self.datetime.date()
+
 
     @property
     def dt(self):
         ''' datetime alias '''
         return self.datetime
 
+
     @property
     def pandas(self):
         ''' pandas format '''
         return pd.to_datetime(self.dt)
+
 
     @property
     def ymd(self):
         ''' string in YYYY-MM-DD format '''
         return self.str('%Y-%m-%d')
 
+
     @property
     def sql_server(self):
         ''' ymd alias '''
         return self.ymd
+
 
     @property
     def oracle(self):
         ''' string in DD-%b-YY (e.g. 30-Sep-19) format '''
         return self.str('%d-%b-%y')
 
+
     @property
     def timestamp(self):
         ''' integer '''
         return self.to_timestamp(self.dt)
 
+
     @property
     def year(self):
         return self.dt.year
+
 
     @property
     def month(self):
         return self.dt.month
 
+
     @property
     def month_name(self):
         return self.dt.strftime('%B')
+
 
     @property
     def day(self):
         return self.dt.day
 
+
     @property
     def yesterday(self):
         return self - 1
 
+
     @property
     def tomorrow(self):
         return self + 1
+
 
     @property
     def month_start(self):
         ''' return date object representing the first day of the month '''
         return self.spawn(datetime.datetime(self.year, self.month, 1))
 
+
     @property
     def month_end(self):
         ''' last day of the month as a MonthEnd instance '''
         return self.last_day_of_month(self.year, self.month)
+
+
+    @property
+    def is_month_end(self):
+        ''' returns True if date aligns with a month-end date '''
+        return self.ymd == self.month_end.ymd
+
 
     @property
     def last_business_day_of_month(self):
@@ -273,28 +299,34 @@ class DateBase(object):
         dt -= {'Saturday': 1, 'Sunday': 2}.get(dt.weekday, 0)
         return dt
 
+
     @property
     def weekday(self):
         return self.str('%A')
 
+
     @property
     def weekday_short(self):
         return self.str('%a')
+
 
     @property
     def is_weekend(self):
         ''' returns True if date does not fall on a weekend '''
         return self.weekday in ('Saturday','Sunday')
 
+
     @property
     def is_holiday(self):
         ''' returns True if date is a U.S. holiday '''
         return self.ymd in self.holidays
 
+
     @property
     def is_business_day(self):
         ''' returns True if date does not fall on a weekend '''
         return not (self.is_weekend or self.is_holiday)
+
 
     @property
     def is_business_hours(self):
@@ -303,10 +335,12 @@ class DateBase(object):
         out = self.is_business_day and self.dt >= set_hour(8) and self.dt <= set_hour(21)
         return out
 
+
     @property
     def is_today(self):
         ''' returns True if date is the current day '''
         return self.ymd == self.spawn().ymd
+
 
     @property
     def holiday(self):
@@ -321,50 +355,61 @@ class DateBase(object):
     def __repr__(self):
         return str(self)
 
+
     def __str__(self):
         components = ['%Y-%m-%d']
         if self.dt.hour + self.dt.second + self.dt.microsecond > 0:
             components.append('%I:%M:%S.%f %p')
         return self.__class__.__name__ + '(%s)' % self.str(' '.join(components))
 
+
     def __int__(self):
         return self.timestamp
+
 
     @Decorators.other_to_dt
     def __eq__(self, other):
         return self.dt == other
 
+
     @Decorators.other_to_dt
     def __ne__(self, other):
         return self.dt != other
+
 
     @Decorators.other_to_dt
     def __lt__(self, other):
         return self.dt < other
 
+
     @Decorators.other_to_dt
     def __gt__(self, other):
         return self.dt > other
+
 
     @Decorators.other_to_dt
     def __le__(self, other):
         return self.dt <= other
 
+
     @Decorators.other_to_dt
     def __ge__(self, other):
         return self.dt >= other
 
+
     @Decorators.arithmetic_other
     def __add__(self, other):
-        ''' if other is date-like then implements default behavior for adding datetimes otherwise
-        other is treated as timedelta '''
+        ''' if other is date-like then implements default behavior for adding
+            datetimes otherwise other is treated as timedelta '''
         return self.dt + other
+
 
     @Decorators.arithmetic_other
     def __sub__(self, other):
-        ''' if other is date-like then implements default behavior for subtracting datetimes otherwise
-        other is treated as timedelta '''
+        ''' if other is date-like then implements default behavior for subtracting
+            datetimes otherwise other is treated as timedelta '''
         return self.dt - other
+
 
     @Decorators.other_to_dt
     def __contains__(self, item):
@@ -447,5 +492,6 @@ class DateBase(object):
 
     @Decorators.spawn
     def normalize(self):
-        ''' the time component (hours, minutes, seconds, microseconds) is set to zero (midnight) '''
+        ''' the time component (hours, minutes, seconds, microseconds) is set to
+            zero (midnight) '''
         return datetime.datetime(self.year, self.month, self.day)
