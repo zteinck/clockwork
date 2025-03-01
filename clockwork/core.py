@@ -8,10 +8,6 @@ from ._month_end import MonthEnd
 
 
 
-#╭-------------------------------------------------------------------------╮
-#| Functions                                                               |
-#╰-------------------------------------------------------------------------╯
-
 def Date(arg=None, normalize=False, format=None, week_offset=0):
     '''
     Description
@@ -21,26 +17,31 @@ def Date(arg=None, normalize=False, format=None, week_offset=0):
     Parameters
     ------------
     arg : str | object
-        object to convert to DateBase object. Currently supported formats include:
+        object to convert to DateBase object. Currently supported formats
+        include:
             • None (the current date and time will be used)
             • pandas._libs.tslibs.timestamps.Timestamp
             • datetime.datetime
             • datetime.date
             • integer or float (in seconds)
             • string
-                ► day of the week fully spelled out or first 3 letters (not case sensitive)
-                  (e.g. 'Monday', 'monday', 'mon')
+                ► day of the week fully spelled out or first 3 letters
+                  (not case sensitive) (e.g. 'Monday', 'monday', 'mon')
                 ► quarter in #QYY, YYYYQ#, or Q# format
                 ► any string format supported by pd.to_datetime
             • DateBase object or DateBase polymorphism
     normalize : bool
-        if True, only the year, month, and day are retained (hours, minutes, seconds, microseconds are set to zero)
+        if True, only the year, month, and day are retained (hours, minutes,
+                 seconds, microseconds are set to zero)
     format : str
-        if 'arg' is a string, this format is used to parse it (e.g. '%Y%m%d %H%S').
+        if 'arg' is a string, this format is used to parse it
+        (e.g. '%Y%m%d %H%S').
     week_offset : int
-        by default, if a day of the week is supplied (e.g. 'Monday') then the date returned will be that day of the week
-        for the current week. This argument is used to override this behavior by shifting the week backwards or forwards
-        (e.g. if arg='Monday' and week_offset=-1 then the Monday of last week will be returned).
+        by default, if a day of the week is supplied (e.g. 'Monday') then
+        the date returned will be that day of the week for the current week.
+        This argument is used to override this behavior by shifting the week
+        backwards or forwards (e.g. if arg='Monday' and week_offset=-1 then
+        the Monday of last week will be returned).
 
     Returns
     ------------
@@ -48,7 +49,8 @@ def Date(arg=None, normalize=False, format=None, week_offset=0):
         DateBase object or polymorphism
     '''
 
-    qtr_map = {k: i for i,k in enumerate([(3,31), (6,30), (9,30), (12,31)], 1)}
+    qtr_scheme = [(3, 31), (6, 30), (9, 30), (12, 31)]
+    qtr_map = {k: i for i, k in enumerate(qtr_scheme, 1)}
 
     def qtr_label_to_dt(x):
         ''' attempts to convert quarter expressed as string to datetime.
@@ -74,7 +76,10 @@ def Date(arg=None, normalize=False, format=None, week_offset=0):
 
     if format is not None:
         if not isinstance(arg, str):
-            raise TypeError(f"When 'format' argument is not None, 'arg' must be a string, not {type(arg)}.")
+            raise TypeError(
+                "When 'format' argument is not None, 'arg' must be a "
+                f"string, not {type(arg).__name__}."
+                )
         arg = DateBase.to_datetime(arg, format=format)
         return Date(arg, normalize=normalize)
 
@@ -102,20 +107,19 @@ def Date(arg=None, normalize=False, format=None, week_offset=0):
     else:
         raise ValueError(f'date argument {arg} of type {type(arg)} is not supported.')
 
-    if normalize: dt = datetime.datetime(dt.year, dt.month, dt.day)
+    if normalize:
+        dt = datetime.datetime(dt.year, dt.month, dt.day)
 
     if dt.day == DateBase.n_days_in_month(dt.year, dt.month):
         qtr = qtr_map.get((dt.month, dt.day))
-        return QuarterEnd(dt, qtr) if qtr else MonthEnd(dt)
+        return QuarterEnd(dt) if qtr else MonthEnd(dt)
     else:
         return DateBase(dt)
-
 
 
 def day_of_week(day, delta=0):
     ''' see DateBase.first_last decorator for documentation '''
     return Date(normalize=True).last(day, delta)
-
 
 
 def month_end(delta=0):
@@ -127,19 +131,27 @@ def month_end(delta=0):
     Parameters
     ------------
     delta : int | str | DateBase
-        Offset value +/- from the most recent month end (e.g. 0 is the most recent month end and -1 is the 2nd most recent month end).
+        Offset value +/- from the most recent month end (e.g. 0 is the most
+        recent month end and -1 is the 2nd most recent month end).
 
     Returns
     ------------
     clockwork.MonthEnd object
     '''
-    if isinstance(delta, (DateBase, str)): return Date(delta)
-    y, m = divmod(datetime.date.today().year * 12 + datetime.date.today().month + delta - 1, 12)
+    if isinstance(delta, (DateBase, str)):
+        out = Date(delta)
+        if not isinstance(out, MonthEnd):
+            raise ValueError(
+                f"delta '{delta}' did not yield a month-end object: {out}"
+                )
+        return out
+
+    today = datetime.date.today()
+    y, m = divmod(today.year * 12 + today.month + delta - 1, 12)
     if m == 0:
         y -= 1
         m = 12
     return MonthEnd(datetime.datetime(y, m, 1))
-
 
 
 def quarter_end(delta=0, scheme=None):
@@ -151,10 +163,11 @@ def quarter_end(delta=0, scheme=None):
     Parameters
     ------------
     delta : int | str | DateBase
-        clockwork.date() -> 'date' argument.
-        Integer values are treated as offsets +/- from the most recent quarter end (e.g. 0 is the most recent quarter
-        end and -1 is the 2nd most recent quarter end).
-        String values represent specific quarters. Acceptable formats include: '#QYY' or 'YYYYQ#'
+        Integer values are treated as offsets (+/-) from the most recent quarter
+        end (e.g. 0 is the most recent quarter end and -1 is the 2nd most recent
+        quarter end).
+        String values represent specific quarters. Acceptable formats include:
+        '#QYY' or 'YYYYQ#'
     scheme : tuple
         Tuple listing the quarter end months. Defaults to calendar year-end.
 
@@ -162,18 +175,29 @@ def quarter_end(delta=0, scheme=None):
     ------------
     clockwork.QuarterEnd object
     '''
-    if isinstance(delta, (DateBase, str)): return Date(delta)
-    if scheme is not None: raise NotImplementedError
-    scheme = (3, 6, 9, 12)
+    if scheme is not None:
+        raise NotImplementedError(
+            'Only default quarter-end months are currently supported'
+            )
+
+    if isinstance(delta, (DateBase, str)):
+        out = Date(delta)
+        if not isinstance(out, QuarterEnd):
+            raise ValueError(
+                f"delta '{delta}' did not yield a quarter-end object: {out}"
+                )
+        return out
+
+    scheme = QuarterEnd.scheme
     today = datetime.datetime.now()
     cy, cm, cd = today.year, today.month, today.day
     if cd <= DateBase.n_days_in_month(cy, cm): cm -= 1
     candidates = [((cy * 12) + m) + (delta * 3) - 1 for m in scheme]
-    candidates.insert(0,((cy - 1) * 12) + scheme[-1] + (delta * 3) - 1)
-    y, m = divmod(candidates[np.digitize(((cy * 12) + cm + (delta * 3)), candidates, right=True) - 1], 12)
+    candidates.insert(0, ((cy - 1) * 12) + scheme[-1] + (delta * 3) - 1)
+    index = np.digitize(((cy * 12) + cm + (delta * 3)), candidates, right=True) - 1
+    y, m = divmod(candidates[index], 12)
     m += 1
-    return QuarterEnd(dt=datetime.datetime(y, m, 1), qtr=scheme.index(m) + 1)
-
+    return QuarterEnd(datetime.datetime(y, m, 1))
 
 
 def year_end(delta=0, **kwargs):
@@ -181,7 +205,6 @@ def year_end(delta=0, **kwargs):
     quarter = quarter_end().qtr
     delta = (4 * delta) + (4 - quarter)
     return quarter_end(delta, **kwargs)
-
 
 
 #╭-------------------------------------------------------------------------╮
