@@ -9,7 +9,8 @@ class MonthEnd(DateBase):
     #╰-------------------------------------------------------------------------╯
 
     def __init__(self, dt):
-        super().__init__(dt.replace(day=self.n_days_in_month(dt.year, dt.month)))
+        day = self.n_days_in_month(dt.year, dt.month)
+        super().__init__(dt.replace(day=day))
 
 
     #╭-------------------------------------------------------------------------╮
@@ -20,27 +21,52 @@ class MonthEnd(DateBase):
     def long(self):
         return self.str('%Y-%m-%d')
 
+
     @property
     def compact(self):
         return self.str('%Y-%m')
 
+
     @property
     def short(self):
         return self.str('%b')
+
+
+    @property
+    def is_year_end(self):
+        return self.month == 12
+
+
+    @property
+    def is_quarter_end(self):
+        return self.month in {3, 6, 9, 12}
+
 
     @property
     def last_quarter_end(self):
         ''' returns most recent quarter end '''
         delta = 0
         while True:
-            obj = self.offset(delta=delta)
-            if hasattr(obj, 'quarter'): return obj
+            me = self.offset(delta=delta)
+            if me.is_quarter_end:
+                return me.to_quarter_end()
             delta -= 1
 
 
     #╭-------------------------------------------------------------------------╮
     #| Instance Methods                                                        |
     #╰-------------------------------------------------------------------------╯
+
+    def to_quarter_end(self):
+        from ._quarter_end import QuarterEnd
+        if self.is_quarter_end:
+            return QuarterEnd(self.dt)
+        else:
+            raise ValueError(
+                "Month-end date does not align with a quarter-end "
+                f"date: '{self.ymd}'"
+                )
+
 
     def offset(self, delta):
         ''' returns the month end 'delta' months away from the instance '''
