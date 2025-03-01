@@ -13,8 +13,8 @@ class Task(object):
     '''
     Description
     --------------------
-    job object designed to be used in conjunction with TaskScheduler as the 'job' argument
-    in self._run_job()
+    job object designed to be used in conjunction with TaskScheduler as the
+    'job' argument in self._run_job()
 
     Class Attributes
     --------------------
@@ -23,7 +23,8 @@ class Task(object):
     verbose : bool
         If True, class content is printed to console.
     disable_print : bool
-        If True, printing is suppressed while func runs. Must be True if verbose is True.
+        If True, printing is suppressed while func runs. Must be True if verbose
+        is True.
     cascade_status : str
         cascade status
 
@@ -44,24 +45,30 @@ class Task(object):
     cancel_on_failure : bool
         If True, the job will be cancelled if it raises an exception.
     cancel_on_completion : bool
-        If True, the job will be cancelled if it completed successfully (i.e. job will run only once).
+        If True, the job will be cancelled if it completed successfully
+        (i.e. job will run only once).
     notify_on_failure : bool
-        If True, an email notification is sent to my inbox that includes the traceback. cancel_on_failure
-        and cascade are automatically set to True if this argument is True (prevents endless spam).
+        If True, an email notification is sent to my inbox that includes the
+        traceback. cancel_on_failure and cascade are automatically set to True
+        if this argument is True (prevents endless spam).
     restrict_to_business_hours : bool
-        If True, the job will only execute during business hours. This is a more restrictive version of restrict_to_business_days.
+        If True, the job will only execute during business hours. This is a more
+        restrictive version of restrict_to_business_days.
     restrict_to_business_days : bool
         If True, the job will only execute during weekdays (i.e. not weekends).
     cascade : bool
-        If True, when the job (denoted by the 'name' argument) is reflected multiple times in the jobs table
-        due to having multiple 'at' values, changes in activiation in one will cascade to all others. For example,
-        consider the job named 'my job' which is scheduled at 8:00 AM and 5:00 PM that is cancelled on completion.
-        If the 8:00 AM completes successfully then the job with that 'at' time will be set to inactive and have its
-        status updated in the table accordingly. Under default behavior, the 5:00 PM run will be unaffected by the
-        completion of the 8:00 AM run, however, if cascade is set to True then the 5:00 PM run will also receive
-        the same updates.
+        If True, when the job (denoted by the 'name' argument) is reflected
+        multiple times in the jobs table due to having multiple 'at' values,
+        changes in activiation in one will cascade to all others. For example,
+        consider the job named 'my job' which is scheduled at 8:00 AM and 5:00
+        PM that is cancelled on completion. If the 8:00 AM completes successfully
+        then the job with that 'at' time will be set to inactive and have its status
+        updated in the table accordingly. Under default behavior, the 5:00 PM run
+        will be unaffected by the completion of the 8:00 AM run, however, if cascade
+        is set to True then the 5:00 PM run will also receive the same updates.
     attempts : int
-        If greater than 1, the job will be attempted this number of times before being cancelled.
+        If greater than 1, the job will be attempted this number of times before
+        being cancelled.
     status : str | None
         current status of the job
     '''

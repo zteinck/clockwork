@@ -8,13 +8,17 @@ from pathpilot import Folder
 #╰-------------------------------------------------------------------------╯
 
 class CustomLogFormatter(logging.Formatter):
-    ''' the default implementation of logging.Formatter does not allow timestamps to be formatted how I want '''
+    ''' the default implementation of logging.Formatter does not allow
+        timestamps to be formatted how I want '''
 
     converter = datetime.datetime.fromtimestamp
 
     def formatTime(self, record, datefmt=None):
-        if datefmt is not None: raise TypeError('datefmt argument must be None')
-        return self.converter(record.created).strftime('%Y-%m-%d %I:%M:%S.{} %p').format('%03d' % record.msecs)
+        if datefmt is not None:
+            raise TypeError('datefmt argument must be None')
+        return self.converter(record.created)\
+                   .strftime('%Y-%m-%d %I:%M:%S.{} %p')\
+                   .format('%03d' % record.msecs)
 
 
 
@@ -55,7 +59,9 @@ class Logger(object):
         #formatter = CustomLogFormatter(fmt='%(asctime)s %(name)s %(levelname)s %(message)s')
 
         # create file handler which logs even debug messages
-        self.file = Folder().parent.join('Data', 'Logger', read_only=False).join(f'{name}.log').path
+        self.file = Folder().parent\
+            .join('Data', 'Logger', read_only=False)\
+            .join(f'{name}.log').path
         if clear: self.clear()
         fh = logging.FileHandler(self.file)
         fh.setLevel(logging.DEBUG)
@@ -90,7 +96,6 @@ class Logger(object):
 
     def clear(self):
         open(self.file, 'w').close()
-
 
 
 #╭-------------------------------------------------------------------------╮

@@ -18,8 +18,8 @@ class TaskMaster(object):
     '''
     Description
     --------------------
-    Class provides a user-friendly means of using the TaskScheduler implementation of
-    schedule.Scheduler to schedule SmartJobs
+    Class provides a user-friendly means of using the TaskScheduler
+    implementation of schedule.Scheduler to schedule SmartJobs
 
     Class Attributes
     --------------------
@@ -75,9 +75,11 @@ class TaskMaster(object):
             Task.at
         active : binary
             If 1, the job is active and able to be scheduled.
-            If 0, the job is inactive and unable to be scheduled. This value is obtained via one of the following avenues
+            If 0, the job is inactive and unable to be scheduled. This value is
+                  obtained via one of the following avenues
                 1) job completed succesfully and was cancelled
-                2) job obained this status via cascade from a job that satisfied criteria in 1)
+                2) job obained this status via cascade from a job that satisfied
+                   criteria in 1)
                 3) job was manually set inactive via TaskMaster.set_inactive method
         expiry : str
             Task.expiry
@@ -105,7 +107,16 @@ class TaskMaster(object):
 
 
     @classmethod
-    def add(cls, func, every=None, at=None, interval=1, start=None, expiry=None, **kwargs):
+    def add(
+        cls,
+        func,
+        every=None,
+        at=None,
+        interval=1,
+        start=None,
+        expiry=None,
+        **kwargs
+        ):
         '''
         Description
         ------------
@@ -124,20 +135,23 @@ class TaskMaster(object):
         func : func
             Task func argument
         every : str
-            string representation of schedule.Job property (e.g. 'minutes', 'hour', 'day' etc.).
-            If None and cancel_on_completion kwarg is True, every and interval will be set to
-            'second' and 1, respectively, so that the job will run ASAP once the 'start' criteria
-            has been met (if applicable).
+            string representation of schedule.Job property (e.g. 'minutes',
+            'hour', 'day' etc.).
+            If None and cancel_on_completion kwarg is True, every and interval
+            will be set to 'second' and 1, respectively, so that the job will
+            run ASAP once the 'start' criteria has been met (if applicable).
         at : str | iter
-            time_str argument passed to schedule.Job.at(time_str). Times may be passed in
-            '%I:%M%p' format (e.g ['06:15 AM', '12:15 PM', '06:15 PM']). If argument is an
-            iterable then the job will be scheduled at each constituent time.
+            time_str argument passed to schedule.Job.at(time_str). Times may be
+            passed in '%I:%M%p' format (e.g ['06:15 AM', '12:15 PM', '06:15 PM']).
+            If argument is an iterable then the job will be scheduled at each
+            constituent time.
         interval : int
             schedule.Scheduler.every interval argument
         start : Date
             If not None, job will be not be added until this datetime
         expiry : Date
-            If not None, job will be set inactive and stop running after this datetime
+            If not None, job will be set inactive and stop running after this
+            datetime
         kwargs : keyword arguments
             keyword arguments passed to Task.__init__
 
@@ -147,7 +161,8 @@ class TaskMaster(object):
         '''
 
         if not hasattr(cls, 'db'):
-            cls.db = Folder().parent.join('Data', 'SQLite', read_only=False).join('taskmaster.sqlite')
+            cls.db = Folder().parent.join('Data', 'SQLite', read_only=False)\
+                                    .join('taskmaster.sqlite')
             cls.db.connect()
             cls.db.enable_foreign_keys()
 
@@ -213,7 +228,6 @@ class TaskMaster(object):
         except:
             pass
         return True
-
 
 
 #╭-------------------------------------------------------------------------╮
