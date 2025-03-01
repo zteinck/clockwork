@@ -1,36 +1,17 @@
 import re
-import time
 from textwrap import wrap as wrap_text
 
 
 
-#╭-------------------------------------------------------------------------╮
-#| Functions                                                               |
-#╰-------------------------------------------------------------------------╯
-
 def elapsed_time(seconds):
     out = []
-    for k,v in [('days', 86400), ('hours', 3600), ('minutes', 60)]:
+    for k, v in [('days', 86400), ('hours', 3600), ('minutes', 60)]:
         count = int(seconds / v)
         if count > 0:
             out.append(f'{count} {k}')
             seconds -= count * v
     out.append(f'{round(seconds, 2)} seconds')
     return ', '.join(out)
-
-
-def action_timer(func):
-
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        print(add_border(func.__name__, width=75))
-        print()
-        out = func(*args, **kwargs)
-        print(add_border(f'{func.__name__} complete in {elapsed_time(time.time() - start_time)}', width=75))
-        print()
-        return out
-
-    return wrapper
 
 
 def month_year_iter(start_month, start_year, end_month=None, end_year=None, rng=None, step=0):
