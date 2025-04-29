@@ -8,7 +8,6 @@ from ..utils import elapsed_time
 from .utils import PrerequisiteError, ContinueFailedJob
 
 
-
 class Task(object):
     '''
     Description
@@ -35,7 +34,8 @@ class Task(object):
     at : str
         at time string
     expiry : Date
-        If not None, job will be set inactive and stop running after this datetime
+        If not None, job will be set inactive and stop running after this
+        datetime
     func : func
         function to run
     args : tuple
@@ -172,7 +172,8 @@ class Task(object):
                 print(f' @ {Date()} ->', end=' ')
                 print('Job Cancelled')
 
-        # cancel job if it was cancelled on cascasde or if it was set inactive after being scheduled
+        # cancel job if it was cancelled on cascasde or
+        # if it was set inactive after being scheduled
         if self.status == self.cascade_status or \
            not self.master.is_active(self.name, self.at):
             return CancelJob

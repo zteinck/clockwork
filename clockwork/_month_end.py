@@ -1,7 +1,6 @@
 from ._base import DateBase
 
 
-
 class MonthEnd(DateBase):
 
     #╭-------------------------------------------------------------------------╮

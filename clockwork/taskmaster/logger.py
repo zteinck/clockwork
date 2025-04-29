@@ -21,7 +21,6 @@ class CustomLogFormatter(logging.Formatter):
                    .format('%03d' % record.msecs)
 
 
-
 class Logger(object):
 
     #╭-------------------------------------------------------------------------╮

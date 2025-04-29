@@ -1,15 +1,14 @@
 from .utils import PrerequisiteError
 
 
-
 class FileMonitor(object):
     '''
     Description
     --------------------
     Monitors a folder for new files and passes latest and 2nd latest file
-    names to user-defined function. Class is intended to be used in conjunction
-    with TaskMaster as a func argument which allows for file monitoring at regular
-    intervals.
+    names to user-defined function. Class is intended to be used in
+    conjunction with TaskMaster as a func argument which allows for file
+    monitoring at regular intervals.
 
     Class Attributes
     --------------------
@@ -18,8 +17,8 @@ class FileMonitor(object):
     Instance Attributes
     --------------------
     func : func
-        Custom function that takes the latest and second-latest file names in a
-        folder as the first and second arguments, respectively.
+        Custom function that takes the latest and second-latest file names
+        in a folder as the first and second arguments, respectively.
     folder : Folder object
         folder to monitor for new files.
     filter_kwargs : dict

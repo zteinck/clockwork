@@ -7,7 +7,6 @@ from ._quarter_end import QuarterEnd
 from ._month_end import MonthEnd
 
 
-
 def Date(arg=None, normalize=False, format=None, week_offset=0):
     '''
     Description

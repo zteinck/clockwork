@@ -1,7 +1,6 @@
 from ._month_end import MonthEnd
 
 
-
 class QuarterEnd(MonthEnd):
 
     #╭-------------------------------------------------------------------------╮

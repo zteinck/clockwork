@@ -2,7 +2,6 @@ import re
 from textwrap import wrap as wrap_text
 
 
-
 def elapsed_time(seconds):
     out = []
     for k, v in [('days', 86400), ('hours', 3600), ('minutes', 60)]:
