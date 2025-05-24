@@ -3,7 +3,7 @@ import os
 from contextlib import redirect_stdout
 from schedule import CancelJob
 
-from ..core import Date
+from ..timestamp import Timestamp
 from ..utils import elapsed_time
 from .utils import PrerequisiteError, ContinueFailedJob
 
@@ -33,7 +33,7 @@ class Task(object):
         name of job
     at : str
         at time string
-    expiry : Date
+    expiry : Timestamp
         If not None, job will be set inactive and stop running after this
         datetime
     func : func
@@ -164,12 +164,12 @@ class Task(object):
             if logger: logger.info(f"{self.name} status update: '{self.status}'")
             self.update_table(active=0 if set_inactive else 1)
 
-        if self.expiry and self.expiry < Date():
+        if self.expiry and self.expiry < Timestamp():
             update_status('cancelled on expiration', set_inactive=True)
             if self.verbose:
                 print('Killing', end=' ')
                 print(self.name, end='')
-                print(f' @ {Date()} ->', end=' ')
+                print(f' @ {Timestamp()} ->', end=' ')
                 print('Job Cancelled')
 
         # cancel job if it was cancelled on cascasde or
@@ -186,12 +186,12 @@ class Task(object):
                 if self.verbose:
                     print('Running', end=' ')
                     print(self.name, end='')
-                    print(f' @ {Date()} ->', end=' ')
+                    print(f' @ {Timestamp()} ->', end=' ')
 
-                if self.restrict_to_business_hours and not Date().is_business_hours:
+                if self.restrict_to_business_hours and not Timestamp().is_business_hours:
                     raise PrerequisiteError('cannot execute outside of business hours')
 
-                if self.restrict_to_business_days and not Date().is_business_day:
+                if self.restrict_to_business_days and not Timestamp().is_business_day:
                     raise PrerequisiteError('cannot execute during the weekend')
 
                 if self.disable_print:

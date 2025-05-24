@@ -1,10 +1,9 @@
 import datetime
 import time
 import uuid
-from oddments import to_iter
-from pathpilot import Folder
+import oddments as odd
 
-from ..core import Date
+from ..timestamp import Timestamp
 from ._scheduler import TaskScheduler
 from ._task import Task
 
@@ -146,9 +145,9 @@ class TaskMaster(object):
             constituent time.
         interval : int
             schedule.Scheduler.every interval argument
-        start : Date
+        start : Timestamp
             If not None, job will be not be added until this datetime
-        expiry : Date
+        expiry : Timestamp
             If not None, job will be set inactive and stop running after this
             datetime
         kwargs : keyword arguments
@@ -160,15 +159,14 @@ class TaskMaster(object):
         '''
 
         if not hasattr(cls, 'db'):
-            cls.db = Folder().parent.join('Data', 'SQLite', read_only=False)\
-                                    .join('taskmaster.sqlite')
-            cls.db.connect()
-            cls.db.enable_foreign_keys()
+            raise NotImplementedError
+            # cls.db.connect()
+            # cls.db.enable_foreign_keys()
 
         if not hasattr(cls, 'scheduler'):
             cls.scheduler = TaskScheduler()
 
-        now = Date()
+        now = Timestamp()
         if (start and start > now) or (expiry and expiry < now): return
         expiry_str = expiry.dt.strftime('%Y-%m-%d %I:%M:%S.{} %p')\
                      .format('%03d' % (expiry.dt.microsecond / 1000))\
@@ -183,7 +181,7 @@ class TaskMaster(object):
             else:
                 raise Exception("'every' argument cannot be None")
 
-        for at in to_iter(at):
+        for at in odd.to_iter(at):
             job = getattr(cls.scheduler.every(interval), every)
             if at is not None:
                 try:

@@ -1,18 +1,22 @@
+from functools import wraps
+from oddments import add_border
 import time
 
-from .utils import elapsed_time, add_border
+from .utils import format_elapsed_seconds
 
 
 def action_timer(func):
 
+    @wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        print(add_border(func.__name__, width=75))
-        print()
+        action = func.__name__
+        header = add_border(action, width=75, fixed_width=True)
+        print(header + '\n')
         out = func(*args, **kwargs)
-        et = elapsed_time(time.time() - start_time)
-        print(add_border(f'{func.__name__} complete in {et}', width=75))
-        print()
+        duration = format_elapsed_seconds(time.time() - start_time)
+        trailer = add_border(f'{action} complete in {duration}.')
+        print(trailer + '\n')
         return out
 
     return wrapper

@@ -1,6 +1,5 @@
 import logging
 import datetime
-from pathpilot import Folder
 
 
 #╭-------------------------------------------------------------------------╮
@@ -55,12 +54,10 @@ class Logger(object):
         # create custom formatter
         # https://docs.python.org/3/library/logging.html#logrecord-attributes
         formatter = CustomLogFormatter(fmt='%(asctime)s %(levelname)s %(message)s')
-        #formatter = CustomLogFormatter(fmt='%(asctime)s %(name)s %(levelname)s %(message)s')
+        # formatter = CustomLogFormatter(fmt='%(asctime)s %(name)s %(levelname)s %(message)s')
 
         # create file handler which logs even debug messages
-        self.file = Folder().parent\
-            .join('Data', 'Logger', read_only=False)\
-            .join(f'{name}.log').path
+        self.file = self.folder.join(f'{name}.log', read_only=False).path
         if clear: self.clear()
         fh = logging.FileHandler(self.file)
         fh.setLevel(logging.DEBUG)
