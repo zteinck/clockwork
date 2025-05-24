@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clockwork"
-version = "0.2.2"
+version = "0.3.0"
 description = "Toolkit for time-related operations including scheduling, logging, date manipulation, and more."
 authors = ["Zachary Einck <zacharyeinck@gmail.com>"]
 license = "MIT"
@@ -12,11 +12,9 @@ homepage = "https://github.com/zteinck/clockwork"
 python = "^3.8"
 pandas = "*"
 numpy = "*"
-oddments = "*"
-pathpilot = "*"
 schedule = "*"
 holidays = "*"
-textwrap3 = "*"
+oddments = ">=0.3.0"
 
 [build-system]
 requires = ["poetry-core"]
