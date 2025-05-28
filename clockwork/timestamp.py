@@ -119,7 +119,7 @@ class Timestamp(object):
                 # Otherwise, 'other' is assumed to be a delta and the resulting
                 # Timestamp object is returned.
                 delta = self._build_delta(other)
-                return self._to_timestamp(func(self, delta))
+                return self._make_base(func(self, delta))
 
             return wrapper
 
@@ -274,8 +274,8 @@ class Timestamp(object):
 
     @property
     def date(self):
-        ''' return the date component as a 'datetime.date' object '''
-        return self.dt.date()
+        ''' to_date() alias '''
+        return self.to_date()
 
 
     @property
@@ -286,7 +286,7 @@ class Timestamp(object):
 
     @property
     def pandas(self):
-        ''' return as a pd.Timestamp object '''
+        ''' to_pandas() alias '''
         return self.to_pandas()
 
 
@@ -297,27 +297,15 @@ class Timestamp(object):
 
 
     @property
-    def sql_server(self):
-        ''' ymd alias '''
-        return self.ymd
-
-
-    @property
-    def oracle(self):
-        ''' string in DD-%b-YY (e.g. 30-Sep-19) format '''
-        return self.to_string('%d-%b-%y')
-
-
-    @property
     def timestamp(self):
-        ''' returns a timestamp[float] '''
-        return self.to_pandas().timestamp()
+        ''' to_timestamp() alias '''
+        return self.to_timestamp()
 
 
     @property
     def time(self):
-        ''' returns the time component (datetime.time) '''
-        return self.dt.time()
+        ''' to_time() alias '''
+        return self.to_time()
 
 
     @property
@@ -505,7 +493,7 @@ class Timestamp(object):
 
 
     def __float__(self):
-        return self.timestamp
+        return self.to_timestamp()
 
 
     def __int__(self):
@@ -571,13 +559,33 @@ class Timestamp(object):
 
     def copy(self):
         ''' returns a deep copy of self '''
-        dt = deep_copy(self.dt)
+        dt = self.to_datetime()
         return self.__class__(dt)
+
+
+    def to_datetime(self):
+        ''' returns a copy of the underlying datetime.datetime object '''
+        return deep_copy(self.dt)
 
 
     def to_pandas(self):
         ''' return as a pd.Timestamp object '''
         return pd.to_datetime(self.dt)
+
+
+    def to_timestamp(self):
+        ''' returns timestamp expressed in seconds '''
+        return self.to_pandas().timestamp()
+
+
+    def to_date(self):
+        ''' return the date component as a 'datetime.date' object '''
+        return self.dt.date()
+
+
+    def to_time(self):
+        ''' returns the time component as a 'datetime.time' object '''
+        return self.dt.time()
 
 
     def to_string(self, fmt):
@@ -586,7 +594,7 @@ class Timestamp(object):
 
 
     def str(self, *args, **kwargs):
-        ''' strftime alias '''
+        ''' to_string() alias '''
         return self.to_string(*args, **kwargs)
 
 
@@ -637,7 +645,7 @@ class Timestamp(object):
 
     def _shift(self, **kwargs):
         delta = self._build_delta(kwargs)
-        return self._to_timestamp(self.dt + delta)
+        return self._make_base(self.dt + delta)
 
 
     def shift(self, **kwargs):
@@ -710,7 +718,7 @@ class Timestamp(object):
     #╰-------------------------------------------------------------------------╯
 
     @staticmethod
-    def _to_timestamp(*args, **kwargs):
+    def _make_base(*args, **kwargs):
         return Timestamp(*args, **kwargs)
 
 
@@ -914,10 +922,13 @@ class Timestamp(object):
         if isinstance(arg, datetime.date):
             return cls._normalize(arg)
 
+        # timestamp expressed in seconds
         if isinstance(arg, (float, int)):
-            # timestamp expressed in seconds
-            # return datetime.datetime.fromtimestamp(arg)
-            return pd.to_datetime(arg, unit='s').to_pydatetime()
+            # local time zone by default
+            return datetime.datetime.fromtimestamp(arg)
+
+            # UTC by default
+            # return pd.to_datetime(arg, unit='s').to_pydatetime()
 
         raise TypeError(
             f"'arg' of type <{type(arg).__name__}> "
