@@ -482,6 +482,14 @@ class Timestamp(object):
         return getattr(self.dt, name)
 
 
+    def __copy__(self):
+        return self.copy()
+
+
+    def __deepcopy__(self, memo):
+        return self.copy()
+
+
     def __repr__(self):
         return str(self)
 
