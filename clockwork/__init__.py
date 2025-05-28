@@ -8,5 +8,5 @@ from .utils import (
     date_format_to_regex,
     )
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 __author__ = 'Zachary Einck <zacharyeinck@gmail.com>'
