@@ -909,7 +909,8 @@ class Timestamp(object):
 
             return pd.to_datetime(arg, **kwargs).to_pydatetime()
 
-        if isinstance(arg, cls):
+        # Timestamp instance (or subclass)
+        if isinstance(arg, Timestamp):
             return arg.dt
 
         # pandas object
