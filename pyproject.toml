@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clockwork"
-version = "0.3.3"
+version = "0.3.4"
 description = "Toolkit for time-related operations including scheduling, logging, date manipulation, and more."
 authors = ["Zachary Einck <zacharyeinck@gmail.com>"]
 license = "MIT"
