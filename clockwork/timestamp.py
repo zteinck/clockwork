@@ -888,8 +888,8 @@ class Timestamp(object):
             qe_cls = cls._get_quarter_end_cls()
             parsed = qe_cls.parse_label(arg)
             if parsed is None: return
-            year, qtr = parsed
-            qe = qe_cls(year=year, qtr=qtr, offset=offset)
+            year, quarter = parsed
+            qe = qe_cls(year=year, quarter=quarter, offset=offset)
             return qe.dt
 
 
