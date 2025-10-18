@@ -111,7 +111,8 @@ class Timestamp(object):
 
             @wraps(func)
             def wrapper(self, other):
-                # Subtracting a date-like 'other' returns a datetime.timedelta object.
+                # Subtracting a date-like 'other' returns a datetime.timedelta
+                # object.
                 if func.__name__.replace('_', '') == 'sub' and \
                     not isinstance(other, (dict, float, int)):
                     return func(self, self._to_datetime(other))
@@ -163,9 +164,9 @@ class Timestamp(object):
                     characters (e.g. 'Friday' or 'Fri') not case-sensitive. Also
                     supports period ends (e.g. 'QE', 'ME').
                 offset : int
-                    Offset value +/- indicating how many additional weeks to shift.
-                    For example, self.next('Mon', offset=+1) would return the Monday
-                    two weeks from self.
+                    Offset value +/- indicating how many additional weeks to
+                    shift. For example, self.next('Mon', offset=+1) would
+                    return the Monday two weeks from self.
 
                 Returns
                 ------------

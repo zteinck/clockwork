@@ -4,7 +4,7 @@ from contextlib import redirect_stdout
 from schedule import CancelJob
 
 from ..timestamp import Timestamp
-from ..utils import elapsed_time
+from ..utils import format_elapsed_seconds
 from .utils import PrerequisiteError, ContinueFailedJob
 
 
@@ -22,8 +22,8 @@ class Task(object):
     verbose : bool
         If True, class content is printed to console.
     disable_print : bool
-        If True, printing is suppressed while func runs. Must be True if verbose
-        is True.
+        If True, printing is suppressed while func runs. Must be True if
+        verbose is True.
     cascade_status : str
         cascade status
 
@@ -52,8 +52,8 @@ class Task(object):
         traceback. cancel_on_failure and cascade are automatically set to True
         if this argument is True (prevents endless spam).
     restrict_to_business_hours : bool
-        If True, the job will only execute during business hours. This is a more
-        restrictive version of restrict_to_business_days.
+        If True, the job will only execute during business hours. This is a
+        more restrictive version of restrict_to_business_days.
     restrict_to_business_days : bool
         If True, the job will only execute during weekdays (i.e. not weekends).
     cascade : bool
@@ -61,14 +61,15 @@ class Task(object):
         multiple times in the jobs table due to having multiple 'at' values,
         changes in activiation in one will cascade to all others. For example,
         consider the job named 'my job' which is scheduled at 8:00 AM and 5:00
-        PM that is cancelled on completion. If the 8:00 AM completes successfully
-        then the job with that 'at' time will be set to inactive and have its status
-        updated in the table accordingly. Under default behavior, the 5:00 PM run
-        will be unaffected by the completion of the 8:00 AM run, however, if cascade
-        is set to True then the 5:00 PM run will also receive the same updates.
+        PM that is cancelled on completion. If the 8:00 AM completes
+        successfully then the job with that 'at' time will be set to inactive
+        and have its status updated in the table accordingly. Under default
+        behavior, the 5:00 PM run will be unaffected by the completion of the
+        8:00 AM run, however, if cascade is set to True then the 5:00 PM run
+        will also receive the same updates.
     attempts : int
-        If greater than 1, the job will be attempted this number of times before
-        being cancelled.
+        If greater than 1, the job will be attempted this number of times
+        before being cancelled.
     status : str | None
         current status of the job
     '''
@@ -161,7 +162,10 @@ class Task(object):
 
         def update_status(status, set_inactive=False):
             self.status = status
-            if logger: logger.info(f"{self.name} status update: '{self.status}'")
+
+            if logger:
+                logger.info(f"{self.name} status update: '{self.status}'")
+
             self.update_table(active=0 if set_inactive else 1)
 
         if self.expiry and self.expiry < Timestamp():
@@ -188,11 +192,17 @@ class Task(object):
                     print(self.name, end='')
                     print(f' @ {Timestamp()} ->', end=' ')
 
-                if self.restrict_to_business_hours and not Timestamp().is_business_hours:
-                    raise PrerequisiteError('cannot execute outside of business hours')
+                if self.restrict_to_business_hours \
+                    and not Timestamp().is_business_hours:
+                    raise PrerequisiteError(
+                        'cannot execute outside of business hours'
+                        )
 
-                if self.restrict_to_business_days and not Timestamp().is_business_day:
-                    raise PrerequisiteError('cannot execute during the weekend')
+                if self.restrict_to_business_days \
+                    and not Timestamp().is_business_day:
+                    raise PrerequisiteError(
+                        'cannot execute during the weekend'
+                        )
 
                 if self.disable_print:
                     with redirect_stdout(open(os.devnull, 'w')):
@@ -201,10 +211,16 @@ class Task(object):
                     out = self.func(*self.args, **self.kwargs)
 
                 if self.verbose:
-                    print(f'Complete {elapsed_time(time.time() - start)}', end='')
-                    print(' (Job Cancelled)') if self.cancel_on_completion else print('')
+                    elapsed = format_elapsed_seconds(time.time() - start)
+                    print(f'Complete {elapsed}' , end='')
+                    print(
+                        ' (Job Cancelled)'
+                        if self.cancel_on_completion
+                        else ''
+                        )
 
-                if logger: logger.info(f'{self.name} complete')
+                if logger:
+                    logger.info(f'{self.name} complete')
 
                 if self.cancel_on_completion:
                     update_status('cancelled on completion', set_inactive=True)
@@ -240,4 +256,8 @@ class Task(object):
                     if self.notify_on_failure:
                         self.send_email_notification()
 
-                return CancelJob if self.cancel_on_failure else ContinueFailedJob
+                return (
+                    CancelJob
+                    if self.cancel_on_failure
+                    else ContinueFailedJob
+                    )

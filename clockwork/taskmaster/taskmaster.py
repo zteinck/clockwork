@@ -78,7 +78,8 @@ class TaskMaster(object):
                 1) job completed succesfully and was cancelled
                 2) job obained this status via cascade from a job that satisfied
                    criteria in 1)
-                3) job was manually set inactive via TaskMaster.set_inactive method
+                3) job was manually set inactive via TaskMaster.set_inactive
+                   method
         expiry : str
             Task.expiry
         status : str
@@ -139,8 +140,8 @@ class TaskMaster(object):
             will be set to 'second' and 1, respectively, so that the job will
             run ASAP once the 'start' criteria has been met (if applicable).
         at : str | iter
-            time_str argument passed to schedule.Job.at(time_str). Times may be
-            passed in '%I:%M%p' format (e.g ['06:15 AM', '12:15 PM', '06:15 PM']).
+            time_string argument passed to schedule.Job.at(time_string). Times may be
+            passed in '%I:%M%p' format (e.g ['06:15 AM', '12:15 PM']).
             If argument is an iterable then the job will be scheduled at each
             constituent time.
         interval : int
@@ -185,12 +186,13 @@ class TaskMaster(object):
             job = getattr(cls.scheduler.every(interval), every)
             if at is not None:
                 try:
-                    time_str = datetime.datetime.strptime(
-                        at.upper().replace(' ',''), '%I:%M%p'
+                    time_string = datetime.datetime.strptime(
+                        at.upper().replace(' ', ''),
+                        '%I:%M%p'
                         ).strftime('%H:%M')
                 except:
-                    time_str = at
-                job = job.at(time_str)
+                    time_string = at
+                job = job.at(time_string)
             else:
                 at = 'N/A'
 
