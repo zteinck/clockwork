@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clockwork"
-version = "0.3.4"
+version = "0.3.5"
 description = """
 Toolkit for time-related operations including scheduling, logging, date
 manipulation, and more.
