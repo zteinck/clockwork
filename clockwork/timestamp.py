@@ -588,14 +588,9 @@ class Timestamp(object):
         return self.dt.time()
 
 
-    def to_string(self, fmt):
+    def to_string(self, format):
         ''' strftime alias '''
-        return self.strftime(fmt)
-
-
-    def str(self, *args, **kwargs):
-        ''' to_string() alias '''
-        return self.to_string(*args, **kwargs)
+        return self.strftime(format)
 
 
     @Decorators.skip_shift
