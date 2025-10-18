@@ -5,9 +5,9 @@ import holidays as hd
 import pandas as pd
 import numpy as np
 import oddments as odd
-from copy import deepcopy as deep_copy
-from dateutil.relativedelta import \
-    relativedelta as relative_delta
+from copy import deepcopy
+from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse
 
 from .constants import MONTHS_IN_YEAR
 
@@ -565,7 +565,7 @@ class Timestamp(object):
 
     def to_datetime(self):
         ''' returns a copy of the underlying datetime.datetime object '''
-        return deep_copy(self.dt)
+        return deepcopy(self.dt)
 
 
     def to_pandas(self):
@@ -634,7 +634,7 @@ class Timestamp(object):
         if not kwargs:
             raise ValueError("'kwargs' is empty?")
 
-        return (relative_delta if relative else
+        return (relativedelta if relative else
                 datetime.timedelta)(**kwargs)
 
 
@@ -831,7 +831,7 @@ class Timestamp(object):
 
 
     @classmethod
-    def _to_datetime(cls, arg, **kwargs):
+    def _to_datetime(cls, arg, format=None, offset=0):
         '''
         Description
         ------------
@@ -895,14 +895,16 @@ class Timestamp(object):
             raise NotImplementedError
 
         if isinstance(arg, str):
-            if not kwargs.get('format'):
-                offset = cls._try_int(kwargs.pop('offset', 0))
-                for parser in (try_weekday, try_quarter_end):
-                    result = parser(arg, offset)
-                    if result is not None:
-                        return result
+            if format is not None:
+                return datetime.datetime.strptime(arg, format)
 
-            return pd.to_datetime(arg, **kwargs).to_pydatetime()
+            offset = cls._try_int(offset)
+            for func in (try_weekday, try_quarter_end):
+                result = func(arg, offset)
+                if result is not None:
+                    return result
+
+            return parse(arg)
 
         # Timestamp instance (or subclass)
         if isinstance(arg, Timestamp):
