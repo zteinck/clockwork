@@ -1,3 +1,4 @@
+from oddments import validate_value
 import re
 
 
@@ -48,7 +49,7 @@ def format_elapsed_seconds(seconds, n_digits=2):
     return ', '.join(parts)
 
 
-def date_format_to_regex(date_format, encase=False):
+def temporal_format_to_regex(format, encase=False):
     '''
     Description
     ------------
@@ -63,7 +64,7 @@ def date_format_to_regex(date_format, encase=False):
 
     Parameters
     ------------
-    date_format : str
+    format : str
         String of datetime format codes (e.g. '%Y-%m-%d').
     encase : bool
         If True, the output will be encased in parenthesis.
@@ -73,9 +74,11 @@ def date_format_to_regex(date_format, encase=False):
     pattern : str
         regex pattern
     '''
-    mapping = {}
+    validate_value(value=format, attr='format', types=str)
+    validate_value(value=encase, attr='encase', types=bool)
 
     digit_pattern = lambda x: r'\d{%d}' % x
+    mapping = {}
 
     for k, v in [('w', 1), ('j', 3), ('Y', 4), ('f', 6)]:
         mapping['%' + k] = digit_pattern(v)
@@ -96,10 +99,10 @@ def date_format_to_regex(date_format, encase=False):
         mapping['%' + k] = r'(?:%s)' % '|'.join(v)
 
     for k in ['z','Z','c','x','X']:
-        if '%' + k in date_format:
+        if '%' + k in format:
             raise NotImplementedError
 
-    pattern = re.escape(date_format)
+    pattern = re.escape(format)
 
     for k, v in mapping.items():
         pattern = pattern.replace(re.escape(k), v)
