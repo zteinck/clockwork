@@ -286,9 +286,9 @@ class Timestamp(object):
 
 
     @property
-    def pandas(self):
-        ''' to_pandas() alias '''
-        return self.to_pandas()
+    def pd(self):
+        ''' to_pandas_timestamp() alias '''
+        return self.to_pandas_timestamp()
 
 
     @property
@@ -574,14 +574,14 @@ class Timestamp(object):
         return deepcopy(self.dt)
 
 
-    def to_pandas(self):
+    def to_pandas_timestamp(self):
         ''' return as a pd.Timestamp object '''
         return pd.to_datetime(self.dt)
 
 
     def to_timestamp(self):
         ''' returns timestamp expressed in seconds '''
-        return self.to_pandas().timestamp()
+        return self.pd.timestamp()
 
 
     def to_date(self):
