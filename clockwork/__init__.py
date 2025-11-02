@@ -8,5 +8,5 @@ from .utils import (
     temporal_format_to_regex,
     )
 
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 __author__ = 'Zachary Einck <zacharyeinck@gmail.com>'
