@@ -1,4 +1,4 @@
-from oddments import validate_value
+import oddments as odd
 import re
 
 
@@ -74,8 +74,8 @@ def temporal_format_to_regex(format, encase=False):
     pattern : str
         regex pattern
     '''
-    validate_value(value=format, attr='format', types=str)
-    validate_value(value=encase, attr='encase', types=bool)
+    odd.validate_value(value=format, name='format', types=str)
+    odd.validate_value(value=encase, name='encase', types=bool)
 
     digit_pattern = lambda x: r'\d{%d}' % x
     mapping = {}

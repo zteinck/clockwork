@@ -173,7 +173,7 @@ class Timestamp(object):
                 shifted : Timestamp
                     Timestamp instance
                 '''
-                odd.validate_value(value=arg, attr='arg', types=str)
+                odd.validate_value(value=arg, name='arg', types=str)
                 kind = func.__name__
 
                 # try weekday

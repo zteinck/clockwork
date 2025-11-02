@@ -150,7 +150,7 @@ class QuarterEnd(MonthEnd):
 
         odd.validate_value(
             value=value,
-            attr='scheme',
+            name='scheme',
             types=tuple
             )
 

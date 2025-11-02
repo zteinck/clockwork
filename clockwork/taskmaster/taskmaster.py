@@ -182,7 +182,7 @@ class TaskMaster(object):
             else:
                 raise Exception("'every' argument cannot be None")
 
-        for at in odd.to_iter(at):
+        for at in odd.ensure_list(at):
             job = getattr(cls.scheduler.every(interval), every)
             if at is not None:
                 try:

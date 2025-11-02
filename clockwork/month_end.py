@@ -145,7 +145,7 @@ class MonthEnd(Timestamp):
         ''' offsets instance by desired number of periods '''
         odd.validate_value(
             value=periods,
-            attr='periods',
+            name='periods',
             types=int
             )
 
