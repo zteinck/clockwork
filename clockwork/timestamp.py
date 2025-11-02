@@ -262,8 +262,8 @@ class Timestamp(object):
             self._dt = value
         else:
             raise TypeError(
-                f"Value must be of type <datetime.datetime> when set directly, "
-                f"got: {value!r} of type <{type(value).__name__}>."
+                f'Value must be of type <datetime.datetime> when set '
+                f'directly, got: {value!r} of type <{type(value).__name__}>.'
                 )
 
 
@@ -562,6 +562,11 @@ class Timestamp(object):
         ''' returns a deep copy of self '''
         dt = self.to_datetime()
         return self.__class__(dt)
+
+
+    def to_base(self):
+        ''' return a base-class version of this instance '''
+        return self._make_base(self)
 
 
     def to_datetime(self):
