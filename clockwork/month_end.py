@@ -96,17 +96,17 @@ class MonthEnd(Timestamp):
 
     @property
     def long_label(self):
-        return self.str('%Y-%m-%d')
+        return self.to_string('%Y-%m-%d')
 
 
     @property
     def compact_label(self):
-        return self.str('%Y-%m')
+        return self.to_string('%Y-%m')
 
 
     @property
     def short_label(self):
-        return self.str('%b')
+        return self.to_string('%b')
 
 
     @property

@@ -96,7 +96,7 @@ class QuarterEnd(MonthEnd):
 
     @property
     def compact_label(self):
-        return f'{self.qtr}Q' + self.str('%y')
+        return f'{self.qtr}Q' + self.to_string('%y')
 
 
     @property
