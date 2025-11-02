@@ -140,8 +140,8 @@ class TaskMaster(object):
             will be set to 'second' and 1, respectively, so that the job will
             run ASAP once the 'start' criteria has been met (if applicable).
         at : str | iter
-            time_string argument passed to schedule.Job.at(time_string). Times may be
-            passed in '%I:%M%p' format (e.g ['06:15 AM', '12:15 PM']).
+            time_string argument passed to schedule.Job.at(time_string). Times
+            may be passed in '%I:%M%p' format (e.g ['06:15 AM', '12:15 PM']).
             If argument is an iterable then the job will be scheduled at each
             constituent time.
         interval : int
