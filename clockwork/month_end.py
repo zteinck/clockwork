@@ -71,8 +71,7 @@ class MonthEnd(Timestamp):
                 self._validate_month(month)
             else:
                 now = datetime.datetime.now()
-                year = now.year
-                month = now.month - 1 # default to last month
+                year, month = self._get_prior_month(now.year, now.month)
 
             year, month = self._offset(
                 year=year,
