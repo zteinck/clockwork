@@ -1,8 +1,9 @@
-import oddments as odd
 import re
 
+import oddments as odd
 
-def format_elapsed_seconds(seconds, n_digits=2):
+
+def format_duration(seconds, decimals=2):
     '''
     Description
     ------------
@@ -12,7 +13,7 @@ def format_elapsed_seconds(seconds, n_digits=2):
     ------------
     seconds : float | int
         Total number of seconds to format.
-    n_digits : int
+    decimals : int
         Number of decimal places to round the seconds to.
 
     Returns
@@ -21,6 +22,7 @@ def format_elapsed_seconds(seconds, n_digits=2):
         Formatted elapsed time string.
         (e.g. '5 minutes, 5.51 seconds')
     '''
+
     units = {'second': 1}
 
     build_order = {
@@ -34,14 +36,18 @@ def format_elapsed_seconds(seconds, n_digits=2):
         units[k] = v * next(reversed(units.values()))
 
     parts = []
-    for k in reversed(units):
-        v = units[k]
-        if k == 'second':
-            count = round(seconds, n_digits)
-        else:
-            count = int(seconds // v)
 
-        if count > 0:
+    for k in reversed(units):
+        is_second = k == 'second'
+        v = units[k]
+
+        count = (
+            round(seconds, decimals)
+            if is_second
+            else int(seconds // v)
+            )
+
+        if count > 0 or is_second:
             label = k if count == 1 else k + 's'
             parts.append(f'{count} {label}')
             seconds -= (count * v)
@@ -57,9 +63,9 @@ def temporal_format_to_regex(format, encase=False):
 
     Examples:
     ------------
-        • '%m/%d/%y' ➜ \d{2}/\d{2}/\d{2}
+        • '%m/%d/%y' → \d{2}/\d{2}/\d{2}
 
-        • '%Y-%m-%d %I:%M:%S.%f %p' ➜
+        • '%Y-%m-%d %I:%M:%S.%f %p' →
           '\d{4}\-\d{2}\-\d{2}\ \d{2}:\d{2}:\d{2}\.\d{6}\ (?:AM|PM)'
 
     Parameters
@@ -74,8 +80,18 @@ def temporal_format_to_regex(format, encase=False):
     pattern : str
         regex pattern
     '''
-    odd.validate_value(value=format, name='format', types=str)
-    odd.validate_value(value=encase, name='encase', types=bool)
+
+    odd.validate_value(
+        value=format,
+        name='format',
+        types=str,
+        )
+
+    odd.validate_value(
+        value=encase,
+        name='encase',
+        types=bool,
+        )
 
     digit_pattern = lambda x: r'\d{%d}' % x
     mapping = {}

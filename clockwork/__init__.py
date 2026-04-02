@@ -4,7 +4,7 @@ from .quarter_end import QuarterEnd
 from .decorators import action_timer
 
 from .utils import (
-    format_elapsed_seconds,
+    format_duration,
     temporal_format_to_regex,
     )
 

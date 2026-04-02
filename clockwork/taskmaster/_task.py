@@ -1,11 +1,16 @@
 import time
 import os
 from contextlib import redirect_stdout
+
 from schedule import CancelJob
 
 from ..timestamp import Timestamp
-from ..utils import format_elapsed_seconds
-from .utils import PrerequisiteError, ContinueFailedJob
+from ..utils import format_duration
+
+from .utils import (
+    PrerequisiteError,
+    ContinueFailedJob,
+    )
 
 
 class Task(object):
@@ -211,7 +216,7 @@ class Task(object):
                     out = self.func(*self.args, **self.kwargs)
 
                 if self.verbose:
-                    elapsed = format_elapsed_seconds(time.time() - start)
+                    elapsed = format_duration(time.time() - start)
                     print(f'Complete {elapsed}' , end='')
                     print(
                         ' (Job Cancelled)'
