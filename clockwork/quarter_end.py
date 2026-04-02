@@ -1,7 +1,8 @@
-import oddments as odd
-import pandas as pd
 import datetime
 import re
+
+import oddments as odd
+import polars as pl
 
 from .month_end import MonthEnd
 from .constants import MONTHS_IN_YEAR
@@ -148,9 +149,11 @@ class QuarterEnd(MonthEnd):
     def set_scheme(cls, value):
         ''' safely sets 'scheme' class attribute '''
 
+        name = 'scheme'
+
         odd.validate_value(
             value=value,
-            name='scheme',
+            name=name,
             types=tuple
             )
 
@@ -161,19 +164,25 @@ class QuarterEnd(MonthEnd):
                 )
 
         value = tuple(map(cls._try_int, value))
-        s = pd.Series(value)
+        s = pl.Series(name=name, values=value)
 
-        if not (s.diff().dropna() == 3).all():
+        valid_increments = (
+            s.diff(null_behavior='drop') == 3
+            ).all()
+
+        if not valid_increments:
             raise ValueError(
                 "'scheme' must be ascending in "
                 f"increments of 3. got: {value}."
                 )
 
-        if not s.between(
-            left=1,
-            right=MONTHS_IN_YEAR,
-            inclusive='both'
-            ).all():
+        valid_months = s.is_between(
+            lower_bound=1,
+            upper_bound=MONTHS_IN_YEAR,
+            closed='both'
+            ).all()
+
+        if not valid_months:
             raise ValueError(
                 "'scheme' values must be between 1 "
                 f"and {MONTHS_IN_YEAR}, got: {value}."
@@ -212,19 +221,19 @@ class QuarterEnd(MonthEnd):
             if not isinstance(x, str): return
             x = x.strip().upper()
 
-            # YYYYQ#
+            # 'YYYYQ#'
             match = re.fullmatch(r'(\d{4})Q(\d)', x)
             if match: return match.groups()
 
             now = datetime.datetime.now()
 
-            # #QYY
+            # '#QYY'
             match = re.fullmatch(r'(\d)Q(\d{2})', x)
             if match:
                 qtr, yy = match.groups()
                 return f'{now.year // 100}{yy}', qtr
 
-            # Q#
+            # 'Q#'
             match = re.fullmatch(r'Q(\d)', x)
             if match:
                 qtr = match.group(1)
@@ -232,7 +241,10 @@ class QuarterEnd(MonthEnd):
 
 
         parsed = extract_year_qtr(x)
-        if parsed is None: return
+
+        if parsed is None:
+            return
+
         year, qtr = map(cls._try_int, parsed)
 
         if not (1 <= qtr <= 4):
