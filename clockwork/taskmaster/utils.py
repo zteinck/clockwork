@@ -1,7 +1,7 @@
 
 
 class PrerequisiteError(Exception):
-    ''' exception used to indicate a prerequisite condition has not been met '''
+    ''' indicates a prerequisite condition has not been met '''
 
     def __init__(self, message):
         super().__init__(message)
