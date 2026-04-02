@@ -14,7 +14,7 @@ pandas = "*"
 numpy = "*"
 schedule = "*"
 holidays = "*"
-oddments = ">=0.4.3"
+oddments = ">=0.8.0"
 
 [build-system]
 requires = ["poetry-core"]
