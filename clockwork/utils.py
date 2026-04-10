@@ -56,7 +56,7 @@ def format_duration(seconds, decimals=2):
 
 
 def temporal_format_to_regex(format, encase=False):
-    '''
+    r'''
     Description
     ------------
     Converts string of datetime format codes to its regex counterpart.
