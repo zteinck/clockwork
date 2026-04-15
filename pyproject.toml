@@ -1,22 +1,26 @@
-[tool.poetry]
+[project]
 name = "clockwork"
-version = "0.6.0"
+version = "0.6.1"
 description = "Toolkit for time-related operations including scheduling, logging, date manipulation, and more."
-authors = ["Zachary Einck <zacharyeinck@gmail.com>"]
-license = "MIT"
+authors = [
+    { name = "Zachary Einck", email = "zacharyeinck@gmail.com" }
+]
+license = { text = "MIT" }
 readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "holidays>=0.94",
+    "numpy>=2.4.4",
+    "oddments>=0.9.1",
+    "pandas>=3.0.2",
+    "polars>=1.39.3",
+    "schedule>=1.2.2",
+]
+
+[project.urls]
 repository = "https://github.com/zteinck/clockwork"
 homepage = "https://github.com/zteinck/clockwork"
 
-[tool.poetry.dependencies]
-python = "^3.8"
-polars = "*"
-pandas = "*"
-numpy = "*"
-schedule = "*"
-holidays = "*"
-oddments = ">=0.8.1"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
