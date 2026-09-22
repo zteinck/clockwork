@@ -5,7 +5,7 @@ from copy import deepcopy
 import holidays as hd
 import pandas as pd
 import numpy as np
-import oddments as odd
+from oddments import Validator, UNSET
 from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 
@@ -13,14 +13,18 @@ from ..constants import MONTHS_IN_YEAR
 from ._decorators import *
 
 
-class Timestamp(object):
+class Timestamp:
     '''
     Description
     --------------------
-    Timestamp object
+    A thin wrapper around 'datetime.datetime' that provides a convenient
+    interface for manipulating date and/or time values.
 
     Class Attributes
     --------------------
+    repr_format : str
+        String of datetime format codes used to render the object's string
+        representation.
     business_hours : tuple[int]
         Business hours start and stop times (24-hour clock).
     weekday_map : dict | None
@@ -43,10 +47,11 @@ class Timestamp(object):
     #| Class Attributes                                                        |
     #╰-------------------------------------------------------------------------╯
 
+    repr_format = '%Y-%m-%d %I:%M:%S.%f %p'
     business_hours = (8, 17) # 8am - 5pm
-
     weekday_map = None
     holiday_calendar = None
+
     _month_end_cls = None
     _quarter_end_cls = None
 
@@ -55,22 +60,52 @@ class Timestamp(object):
     #| Initialize Instance                                                     |
     #╰-------------------------------------------------------------------------╯
 
-    def __init__(self, arg=None, normalize=False, **kwargs):
-        '''
-        Parameters
-        ------------
-        arg : None | any
-            See '_to_datetime()' documentation.
-        normalize : bool
-            If True, only the year, month, and day are retained (hours,
-            minutes, seconds, and microseconds are set to zero).
-        kwargs : dict
-            Keyword arguments passed to '_to_datetime()'.
-        '''
-        self.dt = self._to_datetime(arg, **kwargs)
+    def __init__(
+        self,
+        source=None,
+        *,
+        source_format=None,
+        source_tz=UNSET,
+        target_tz=UNSET,
+        offset=0,
+        **kwargs
+        ):
 
-        if normalize:
-            self.normalize(inplace=True)
+        # validate source format
+        (
+        Validator(
+            types=str,
+            allow_none=True,
+            )
+        .validate(
+            source_format=source_format
+            )
+        )
+
+        # resolve source & target time zones
+        source_tz, target_tz = (
+            self._resolve_time_zone(v, k)
+            for k, v in {
+                'source_tz': source_tz,
+                'target_tz': target_tz,
+                }.items()
+            )
+
+        # normalize offset
+        offset = self._ensure_int(
+            value=offset,
+            name='offset',
+            )
+
+        # initialize datetime
+        self._init_dt(
+            source=source,
+            source_format=source_format,
+            source_tz=source_tz,
+            target_tz=target_tz,
+            offset=offset,
+            **kwargs
+            )
 
 
     #╭-------------------------------------------------------------------------╮
@@ -79,111 +114,99 @@ class Timestamp(object):
 
     @property
     def dt(self):
-        ''' returns the underlying datetime.datetime object '''
+        ''' the underlying datetime.datetime instance '''
         return self._dt
-
-
-    @dt.setter
-    def dt(self, value):
-        if type(value) is datetime.datetime:
-            self._dt = value
-        else:
-            raise TypeError(
-                f'Value must be of type <datetime.datetime> when set '
-                f'directly, got: {value!r} of type <{type(value).__name__}>.'
-                )
 
 
     @property
     def datetime(self):
-        ''' dt alias '''
+        ''' alias for 'dt' '''
         return self.dt
 
 
     @property
     def date(self):
-        ''' to_date() alias '''
         return self.to_date()
 
 
     @property
     def d(self):
-        ''' date alias '''
-        return self.date
+        return self.to_date()
 
 
     @property
-    def pd(self):
-        ''' to_pandas_timestamp() alias '''
-        return self.to_pandas_timestamp()
+    def time_zone(self):
+        return self.dt.tzinfo
+
+
+    @property
+    def tz(self):
+        ''' alias for 'time_zone' '''
+        return self.time_zone
 
 
     @property
     def ymd(self):
-        ''' string in YYYY-MM-DD format '''
+        ''' Date string in ISO 8601 format (i.e. YYYY-MM-DD) '''
         return self.to_string('%Y-%m-%d')
 
 
     @property
     def timestamp(self):
-        ''' to_timestamp() alias '''
         return self.to_timestamp()
 
 
     @property
     def time(self):
-        ''' to_time() alias '''
         return self.to_time()
 
 
     @property
     def month_name(self):
-        ''' name of month (e.g. 'May') '''
+        ''' full name of the month (e.g. 'May') '''
         return self.to_string('%B')
 
 
     @property
     def yesterday(self):
-        ''' return the date shifted one day earlier '''
+        ''' the date one day earlier '''
         return self.shift(days=-1)
 
 
     @property
     def tomorrow(self):
-        ''' return the date shifted one day later '''
+        ''' the date one day later '''
         return self.shift(days=+1)
 
 
     @property
     def month_start(self):
-        ''' return the date shifted to the first of the month '''
+        ''' the date shifted to the first of the month '''
         return self.replace(day=1)
 
 
     @property
     def month_end(self):
-        ''' return the last day of the month as a MonthEnd object '''
+        ''' returns the last day of the month as a MonthEnd object '''
         return self.to_month_end(strict=False)
 
 
     @property
     def is_month_end(self):
-        ''' returns True if date aligns with a month end date '''
+        ''' returns True if the date aligns with a month end date '''
         return self.is_last_day_of_month
 
 
     @property
     def is_quarter_end(self):
-        ''' returns True if date aligns with a quarter end date '''
-        return (
-            self.is_month_end
-            and self.month in self._get_quarter_end_cls().scheme
-            )
+        ''' returns True if the date aligns with a quarter end date '''
+        scheme = set(self._get_quarter_end_cls()._scheme)
+        return self.is_month_end and self.month in scheme
 
 
     @property
     def weekday_name(self):
-        ''' weekday name (e.g. 'Monday') '''
+        ''' full weekday name (e.g. 'Monday') '''
         return self.to_string('%A')
 
 
@@ -195,57 +218,59 @@ class Timestamp(object):
 
     @property
     def weekday_index(self):
-        ''' abbreviated weekday name (e.g. 'Mon') '''
+        ''' weekday index (e.g. 0) '''
         return self.dt.weekday()
 
 
     @property
     def is_weekend(self):
-        ''' returns True if date falls on the weekend '''
+        ''' returns True if the date falls on the weekend '''
         return self.weekday_name in {'Saturday','Sunday'}
 
 
     @property
     def is_holiday(self):
-        ''' returns True if date is a U.S. holiday '''
+        ''' returns True if the date is a U.S. holiday '''
         return self.holiday_name is not None
 
 
     @property
     def is_non_business_day(self):
-        ''' returns True if date is a not a business day '''
+        ''' returns True if the date is a not a business day '''
         return self.is_weekend or self.is_holiday
 
 
     @property
     def is_business_day(self):
-        ''' returns True if date is a business day '''
+        ''' returns True if the date is a business day '''
         return not self.is_non_business_day
 
 
     @property
     def is_business_hours(self):
-        ''' returns True if date is within business hours '''
+        ''' returns True if the date is within business hours '''
         if not self.is_business_day:
             return False
 
-        kwargs = {
-            k: getattr(self, k)
-            for k in ['year','month','day']
-            }
-
-        start, stop = [
-            datetime.datetime(hour=hour, **kwargs)
+        since, until = (
+            datetime.datetime(
+                year=self.year,
+                month=self.month,
+                day=self.day,
+                hour=hour,
+                tzinfo=self.tz,
+                )
             for hour in self.business_hours
-            ]
+            )
 
-        return start <= self.dt <= stop
+        return since <= self.dt <= until
 
 
     @property
     def is_today(self):
         ''' returns True if date is the current day '''
-        return self.date == datetime.date.today()
+        today = datetime.datetime.now(tz=self.tz).date()
+        return self.date == today
 
 
     @property
@@ -256,8 +281,8 @@ class Timestamp(object):
 
     @property
     def last_day_of_month(self):
-        ''' returns True if it is the last day of the month '''
-        return self.days_in_month(self.year, self.month)
+        ''' returns the last day of the month '''
+        return self.days_in_month(year=self.year, month=self.month)
 
 
     @property
@@ -275,51 +300,75 @@ class Timestamp(object):
     @property
     def last_month_end(self):
         ''' returns most recent month end relative to self '''
-        me_cls = self._get_month_end_cls()
+        month_end_cls = self._get_month_end_cls()
         year, month = self.year, self.month
+
         if not self.is_month_end:
-            year, month = self._get_prior_month(year, month)
-        return me_cls(year=year, month=month)
+            year, month = self._get_prior_month(
+                year=year,
+                month=month,
+                )
+
+        month_end = month_end_cls(
+            year=year,
+            month=month,
+            target_tz=self.tz,
+            )
+
+        return month_end
 
 
     @property
     def last_quarter_end(self):
         ''' returns most recent quarter end relative to self '''
-        qe_cls = self._get_quarter_end_cls()
+        quarter_end_cls = self._get_quarter_end_cls()
         year, month = self.year, self.month
+
         if not self.is_quarter_end:
-            year, month = qe_cls._backtrack_to_scheme(self.year, self.month)
-        return qe_cls(year=year, month=month)
+            year, month = quarter_end_cls._backtrack_to_scheme(
+                year=self.year,
+                month=self.month,
+                )
+
+        quarter_end = quarter_end_cls(
+            year=year,
+            month=month,
+            target_tz=self.tz,
+            )
+
+        return quarter_end
 
 
     #╭-------------------------------------------------------------------------╮
     #| Magic Methods                                                           |
     #╰-------------------------------------------------------------------------╯
 
+    def __hash__(self):
+        return hash(self.dt)
+
+
     def __getattr__(self, name):
         return getattr(self.dt, name)
 
 
     def __copy__(self):
-        return self.copy()
+        return self.clone()
 
 
     def __deepcopy__(self, memo):
-        return self.copy()
+        return self.clone()
 
 
     def __repr__(self):
-        return str(self)
+        return '{0}(dt={1}, tz={2})'.format(
+            self.__class__.__name__,
+            self.to_string(self.repr_format),
+            self.time_zone,
+            )
 
 
     def __str__(self):
-        parts = ['%Y-%m-%d']
-        if not self.is_normalized:
-            parts.append('%I:%M:%S.%f %p')
-        return '{0}({1})'.format(
-            self.__class__.__name__,
-            self.to_string(' '.join(parts))
-            )
+        return repr(self)
 
 
     def __float__(self):
@@ -367,118 +416,14 @@ class Timestamp(object):
 
     @other_to_delta
     def __sub__(self, other):
-        ''' see add documentation '''
         return self.dt - other
-
-
-    @other_to_delta
-    def __iadd__(self, other):
-        self.dt += other
-        return self
-
-
-    @other_to_delta
-    def __isub__(self, other):
-        self.dt -= other
-        return self
 
 
     #╭-------------------------------------------------------------------------╮
     #| Instance Methods                                                        |
     #╰-------------------------------------------------------------------------╯
 
-    def copy(self):
-        ''' returns a deep copy of self '''
-        dt = self.to_datetime()
-        return self.__class__(dt)
-
-
-    def to_base(self):
-        ''' return a base-class version of this instance '''
-        return self._make_base(self)
-
-
-    def to_datetime(self):
-        ''' returns a copy of the underlying datetime.datetime object '''
-        return deepcopy(self.dt)
-
-
-    def to_pandas_timestamp(self):
-        ''' return as a pd.Timestamp object '''
-        return pd.to_datetime(self.dt)
-
-
-    def to_timestamp(self):
-        ''' returns timestamp expressed in seconds '''
-        return self.pd.timestamp()
-
-
-    def to_date(self):
-        ''' return the date component as a 'datetime.date' object '''
-        return self.dt.date()
-
-
-    def to_time(self):
-        ''' returns the time component as a 'datetime.time' object '''
-        return self.dt.time()
-
-
-    def to_string(self, format):
-        ''' strftime alias '''
-        return self.strftime(format)
-
-
-    @skip_shift
-    def skip_holidays():
-        ''' returns the nearest non-holiday date by skipping holidays in the
-            specified direction '''
-        pass
-
-
-    @skip_shift
-    def skip_weekends():
-        ''' returns the nearest non-weekend date by skipping weekends in the
-            specified direction '''
-        pass
-
-
-    @skip_shift
-    def skip_non_business_days():
-        ''' returns the nearest business day date by skipping non-business
-            days in the specified direction '''
-        pass
-
-
-    @enable_inplace
-    def normalize(self, **kwargs):
-        return self._normalize(self)
-
-
-    @enable_inplace
-    def replace(self, **kwargs):
-        return self.dt.replace(**kwargs)
-
-
-    def _build_delta(self, kwargs):
-        ''' constructs a time delta object from keyword arguments '''
-        if not isinstance(kwargs, dict):
-            kwargs = dict(days=kwargs)
-
-        relative = kwargs.pop('relative', False)
-
-        if not kwargs:
-            raise ValueError("'kwargs' is empty?")
-
-        return (relativedelta if relative else
-                datetime.timedelta)(**kwargs)
-
-
-    def _shift(self, **kwargs):
-        delta = self._build_delta(kwargs)
-        return self._make_base(self.dt + delta)
-
-
-    def shift(self, **kwargs):
+    def shift(self, *, biz_days=None, **kwargs):
         '''
         Description
         ------------
@@ -503,16 +448,19 @@ class Timestamp(object):
         shifted : Timestamp
             Timestamp object representing self post-shift.
         '''
-        biz_days = kwargs.pop('biz_days', None)
-        obj = self._shift(**kwargs) if kwargs else self.copy()
 
-        if biz_days is None:
-            if kwargs: return obj
-            raise ValueError("'kwargs' cannot be empty")
+        obj = (
+            self._shift(**kwargs)
+            if kwargs
+            else self.clone()
+            )
+
+        if biz_days is None or biz_days == 0:
+            return obj
 
         delta = int(np.sign(biz_days))
-
         counter = 0
+
         while counter < abs(biz_days):
             obj = obj._shift(days=delta)
             if obj.is_business_day:
@@ -543,14 +491,363 @@ class Timestamp(object):
         pass
 
 
+    def with_time_zone(self, tz):
+        tz = self._resolve_time_zone(value=tz, name='tz')
+        return self.replace(tzinfo=tz)
+
+
+    def to_time_zone(self, tz):
+        dt = self.to_datetime()
+        dt = self._to_time_zone(dt, tz)
+        return self._spawn(dt)
+
+
+    def to_utc(self):
+        return self.to_time_zone('utc')
+
+
+    def to_naive(self):
+        return self.to_time_zone(None)
+
+
+    def clone(self):
+        ''' returns a deep copy of self '''
+        return self._spawn(self)
+
+
+    def to_base(self):
+        ''' return a base-class version of this instance '''
+        return self._make_base(self)
+
+
+    def to_datetime(self):
+        ''' returns a copy of the underlying datetime.datetime object '''
+        return deepcopy(self.dt)
+
+
+    def to_pandas_timestamp(self):
+        ''' return as a pd.Timestamp object '''
+        return pd.to_datetime(self.dt)
+
+
+    def to_timestamp(self):
+        ''' returns timestamp expressed in seconds '''
+        return self.dt.timestamp()
+
+
+    def to_date(self):
+        ''' return the date component as a 'datetime.date' object '''
+        return self.dt.date()
+
+
+    def to_time(self):
+        ''' returns the time component as a 'datetime.time' object '''
+        return self.dt.time()
+
+
+    def to_string(self, format):
+        ''' strftime alias '''
+        return self.strftime(format)
+
+
+    def to_iso_string(self, *, include_time=True):
+        obj = self.dt if include_time else self.d
+        return obj.isoformat()
+
+
+    @skip_shift
+    def skip_holidays():
+        ''' returns the nearest non-holiday date by skipping holidays in the
+            specified direction '''
+        pass
+
+
+    @skip_shift
+    def skip_weekends():
+        ''' returns the nearest non-weekend date by skipping weekends in the
+            specified direction '''
+        pass
+
+
+    @skip_shift
+    def skip_non_business_days():
+        ''' returns the nearest business day date by skipping non-business
+            days in the specified direction '''
+        pass
+
+
+    def normalize(self):
+        dt = self.to_datetime()
+        normalized_dt = self._normalize(dt)
+        return self._spawn(normalized_dt)
+
+
+    def replace(self, **kwargs):
+        dt = self.to_datetime().replace(**kwargs)
+        return self._spawn(dt)
+
+
+    def _spawn(self, *args, **kwargs):
+        return type(self)(*args, **kwargs)
+
+
+    def _build_delta(self, value):
+        ''' constructs a time delta object from keyword arguments '''
+
+        kwargs = (
+            value.copy()
+            if isinstance(value, dict)
+            else dict(days=value)
+            )
+
+        relative = kwargs.pop('relative', False)
+
+        if not kwargs:
+            raise AssertionError(
+                'kwargs cannot be empty.'
+                )
+
+        delta_cls = (
+            relativedelta
+            if relative
+            else datetime.timedelta
+            )
+
+        delta = delta_cls(**kwargs)
+        return delta
+
+
+    def _shift(self, **kwargs):
+        delta = self._build_delta(kwargs)
+        result = self._make_base(self.dt + delta)
+        return result
+
+
+    def _to_time_zone(self, dt, tz):
+        tz = self._resolve_time_zone(value=tz, name='tz')
+        dt = dt.astimezone(tz)
+        if tz is None:
+            dt = dt.replace(tzinfo=None)
+        return dt
+
+
+    def _init_dt(self, **kwargs):
+        self._dt = self._resolve_dt(**kwargs)
+
+
+    def _resolve_dt(
+        self,
+        source,
+        source_format,
+        source_tz,
+        target_tz,
+        offset,
+        ):
+        '''
+        Description
+        ------------
+        Converts a scalar to datetime.datetime instance.
+
+        Parameters
+        ------------
+        source : None | any
+            Value to convert to datetime. Supported formats include:
+                • None → returns the current datetime (i.e. now)
+                • pd.Timestamp
+                • cw.Timestamp or subclass
+                • datetime.datetime
+                • datetime.date
+                • int or float (expressed in seconds)
+                • str
+                    ► Day of the week, either fully spelled out or abbreviated
+                      to the first three letters. Case-insensitive (e.g.
+                      'Monday', 'monday', 'MON').
+                    ► Quarter end label (e.g. '2025 Q1', '3Q25', 'Q4').
+                    ► A string, accompanied by a 'source_format' string
+                      describing how to parse it.
+                    ► Any string parsable by 'dateutil.parser.parse()'
+        source_format : str | None
+            Datetime format code(s) used to parse 'source' when it is a string
+            (e.g. '%Y%m%d %H%M%S').
+        source_tz : UNSET | None | str | datetime.timezone
+            Source time zone.
+        target_tz : UNSET | None | str | datetime.timezone
+            Desired time zone.
+        offset : int
+            If a day of the week is provided (e.g., 'Monday'), the current week
+            is considered the reference point (offset = 0). Other offsets shift
+            the result relative to this reference. For example, if value='Monday'
+            and offset=-1, the result will be the Monday of the previous week.
+            In the case of quarter end labels, see the subclass documentation.
+
+        Returns
+        ------------
+        dt : datetime.datetime
+            datetime.datetime instance.
+        '''
+
+        def try_weekday(source, offset):
+            ''' check if value is a weekday label '''
+            weekday = self.get_weekday_index(source)
+
+            if weekday is None:
+                return None
+
+            if source_tz is not UNSET:
+                raise ValueError(
+                    "'source_tz' is not applicable when 'source' is a "
+                    "weekday name."
+                    )
+
+            now = datetime.datetime.now(tz=_target_tz)
+            days = weekday - now.weekday()
+            dt = now + datetime.timedelta(days=days, weeks=offset)
+            dt = self._normalize(dt)
+            return dt
+
+
+        def try_quarter_end(source, offset):
+            ''' check if value is a quarter end label '''
+            cls = self._get_quarter_end_cls()
+            parsed = cls._parse_label(source, target_tz)
+
+            if parsed is None:
+                return None
+
+            if source_tz is not UNSET:
+                raise ValueError(
+                    "'source_tz' is not applicable when 'source' is a "
+                    "quarter end label."
+                    )
+
+            year, quarter = parsed
+
+            qe = cls(
+                year=year,
+                quarter=quarter,
+                offset=offset,
+                target_tz=target_tz,
+                )
+
+            dt = qe.to_datetime()
+            return dt
+
+
+        def ensure_parsed_tz(dt):
+            if source_tz is not UNSET and source_tz != dt.tzinfo:
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=source_tz)
+                else:
+                    raise ValueError(
+                        f"Time zone parsed from string ({dt.tzinfo}) does "
+                        f"not align with 'source_tz' ({source_tz})."
+                        )
+
+            if target_tz is not UNSET and target_tz != dt.tzinfo:
+                dt = self._to_time_zone(dt=dt, tz=target_tz)
+
+            return dt
+
+
+        _source_tz, _target_tz = (
+            (None if tz is UNSET else tz)
+            for tz in (source_tz, target_tz)
+            )
+
+
+        if source is None:
+            dt = datetime.datetime.now(tz=_target_tz)
+            return dt
+
+        if isinstance(source, str):
+
+            if source_format is not None:
+                dt = datetime.datetime.strptime(source, source_format)
+                dt = ensure_parsed_tz(dt)
+                return dt
+
+            for func in (try_weekday, try_quarter_end):
+                dt = func(source, offset)
+                if dt is not None:
+                    return dt
+
+            dt = ensure_parsed_tz(parse(source))
+            return dt
+
+        if source_format is not None:
+            raise ValueError(
+                "'source_format' must be None when 'source' is not a string."
+                )
+
+        dt = None
+
+        if type(source) is datetime.datetime:
+            dt = source
+
+        elif type(source) is datetime.date:
+            dt = datetime.datetime.combine(
+                date=source,
+                time=datetime.time.min,
+                tzinfo=_source_tz,
+                )
+
+        elif isinstance(source, Timestamp):
+            dt = source.to_datetime()
+
+        elif hasattr(source, 'to_pydatetime'):
+            dt = source.to_pydatetime()
+
+        if dt is not None:
+            (
+            Validator(
+                whitelist=[datetime.datetime]
+                )
+            .validate(
+                type(dt),
+                f"'dt' type",
+                )
+            )
+
+            if source_tz is not UNSET and source_tz != dt.tzinfo:
+                raise ValueError(
+                    f"The resolved datetime's Time zone ({dt.tzinfo}) does "
+                    f"not align with 'source_tz' ({source_tz})."
+                    )
+
+            if target_tz is not UNSET and target_tz != dt.tzinfo:
+                dt = self._to_time_zone(dt=dt, tz=target_tz)
+
+            return dt
+
+
+        # timestamp expressed in seconds
+        elif isinstance(source, (float, int)):
+            if not (
+                source_tz is UNSET
+                or source_tz == datetime.timezone.utc
+                ):
+                raise ValueError(
+                    "'source_tz' must be UNSET or UTC when 'source' is a "
+                    f"timestamp, got: {source_tz!r}"
+                    )
+
+            dt = datetime.datetime.fromtimestamp(
+                timestamp=source,
+                tz=_target_tz,
+                )
+
+            return dt
+
+        else:
+            raise TypeError(
+                f"'source' argument is not supported <{type(source).__name__}>: "
+                f"{source!r}"
+                )
+
+
     #╭-------------------------------------------------------------------------╮
     #| Static Methods                                                          |
     #╰-------------------------------------------------------------------------╯
-
-    @staticmethod
-    def _make_base(*args, **kwargs):
-        return Timestamp(*args, **kwargs)
-
 
     @staticmethod
     def days_in_month(year, month):
@@ -569,18 +866,21 @@ class Timestamp(object):
 
         Returns
         ------------
-        out : int
+        result : int
             Number of days.
         '''
         return calendar.monthrange(year, month)[1]
 
 
     @staticmethod
-    def _normalize(obj):
-        ''' Sets the time attributes (hours, minutes, seconds, microseconds)
-            all to zero (midnight) '''
-        kwargs = {k: getattr(obj, k) for k in ['year','month','day']}
-        return datetime.datetime(**kwargs)
+    def _make_base(*args, **kwargs):
+        return Timestamp(*args, **kwargs)
+
+
+    @staticmethod
+    def _normalize(value):
+        ''' Sets the time component to zero (midnight) '''
+        return value.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
     @staticmethod
@@ -599,18 +899,48 @@ class Timestamp(object):
 
 
     @staticmethod
-    def _try_int(x):
-        odd.validate_value(x, (int, str))
+    def _ensure_int(value, name=None):
+        Validator(types=(int, str)).validate(value, name)
 
-        if isinstance(x, str):
-            if x.isdigit():
-                return int(x)
+        if isinstance(value, str):
+            if value.isdigit():
+                return int(value)
             raise TypeError(
-                "Failed to convert 'x' "
-                f"to integer: {x!r}"
+                f"Failed to convert 'value' to integer: {value!r}"
                 )
 
-        return x
+        return value
+
+
+    @staticmethod
+    def _resolve_time_zone(value, name):
+
+        cls = datetime.timezone
+
+        (
+        Validator(
+            types=(str, cls),
+            allow_none=True,
+            allow_unset=True,
+            )
+        .validate(value, name)
+        )
+
+        if value in (UNSET, None):
+            return value
+
+        if isinstance(value, str):
+            if value.lower() == 'utc':
+                return cls.utc
+            else:
+                raise ValueError(
+                    f'Unsupported string value for {name!r}: {value!r}.'
+                    )
+
+        if isinstance(value, cls):
+            return value
+
+        raise AssertionError
 
 
     #╭-------------------------------------------------------------------------╮
@@ -637,9 +967,9 @@ class Timestamp(object):
     @classmethod
     def _get_weekday_map(cls):
         if cls.weekday_map is None:
-            out = {k: i for i, k in enumerate(calendar.day_name)}
-            out.update({k[:3]: v for k, v in out.items()})
-            cls.weekday_map = out
+            result = {k: i for i, k in enumerate(calendar.day_name)}
+            result.update({k[:3]: v for k, v in result.items()})
+            cls.weekday_map = result
 
         return cls.weekday_map
 
@@ -663,107 +993,3 @@ class Timestamp(object):
             from ..quarter_end import QuarterEnd
             cls._quarter_end_cls = QuarterEnd
         return cls._quarter_end_cls
-
-
-    @classmethod
-    def _to_datetime(cls, arg, format=None, offset=0):
-        '''
-        Description
-        ------------
-        Converts a scalar to datetime.datetime instance.
-
-        Parameters
-        ------------
-        arg : None | any
-            Scalar to convert. Supported formats include:
-                • None returns current datetime (i.e. now)
-                • pd.Timestamp
-                • cw.Timestamp or subclass
-                • datetime.datetime
-                • datetime.date
-                • int or float (in seconds)
-                • str
-                    ► Day of the week fully spelled out or first 3 letters.
-                      Not case sensitive (e.g. 'Monday', 'monday', 'mon').
-                    ► Quarter end label (e.g. '2025Q1', '3Q25', 'Q4').
-                    ► Any string format supported by pd.to_datetime().
-        format : str | None
-            if 'arg' is a string, this is argument is used to parse it
-            (e.g. '%Y%m%d %H%S').
-        offset : int
-            If a day of the week is provided (e.g., 'Monday'), the current week
-            is considered the reference point (offset = 0). Other offsets shift
-            the result relative to this reference. For example, if arg='Monday'
-            and offset=-1, the result will be the Monday of the previous week.
-            In the case of quarter end labels, see the subclass documentation.
-
-        Returns
-        ------------
-        dt : datetime.datetime
-            Timestamp or subclass instance
-        '''
-
-        def try_weekday(arg, weeks):
-            ''' check if arg is a weekday label '''
-            weekday = cls.get_weekday_index(arg)
-            if weekday is None: return
-            now = datetime.datetime.now()
-            days = weekday - now.weekday()
-            dt = now + datetime.timedelta(days=days, weeks=weeks)
-            return cls._normalize(dt)
-
-
-        def try_quarter_end(arg, offset):
-            ''' check if arg is a quarter end label '''
-            qe_cls = cls._get_quarter_end_cls()
-            parsed = qe_cls.parse_label(arg)
-            if parsed is None: return
-            year, quarter = parsed
-            qe = qe_cls(year=year, quarter=quarter, offset=offset)
-            return qe.dt
-
-
-        if arg is None:
-            return datetime.datetime.now()
-
-        if pd.isna(arg):
-            raise NotImplementedError
-
-        if isinstance(arg, str):
-            if format is not None:
-                return datetime.datetime.strptime(arg, format)
-
-            offset = cls._try_int(offset)
-            for func in (try_weekday, try_quarter_end):
-                result = func(arg, offset)
-                if result is not None:
-                    return result
-
-            return parse(arg)
-
-        # Timestamp instance (or subclass)
-        if isinstance(arg, Timestamp):
-            return arg.dt
-
-        # pandas object
-        if hasattr(arg, 'to_pydatetime'):
-            return arg.to_pydatetime()
-
-        if isinstance(arg, datetime.datetime):
-            return arg
-
-        if isinstance(arg, datetime.date):
-            return cls._normalize(arg)
-
-        # timestamp expressed in seconds
-        if isinstance(arg, (float, int)):
-            # local time zone by default
-            return datetime.datetime.fromtimestamp(arg)
-
-            # UTC by default
-            # return pd.to_datetime(arg, unit='s').to_pydatetime()
-
-        raise TypeError(
-            f"'arg' of type <{type(arg).__name__}> "
-            f"is not supported: {arg!r}."
-            )

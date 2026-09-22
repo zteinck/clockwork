@@ -20,7 +20,7 @@ class CustomLogFormatter(logging.Formatter):
                    .format('%03d' % record.msecs)
 
 
-class Logger(object):
+class Logger:
 
     #╭-------------------------------------------------------------------------╮
     #| Class Attributes                                                        |
@@ -112,9 +112,9 @@ def log(logger=None):
             logger.info('start')
 
             try:
-                out = func(*args, **kwargs)
+                result = func(*args, **kwargs)
                 logger.info('complete')
-                return out
+                return result
             except Exception as e:
                 logger.exception('exception')
                 return e

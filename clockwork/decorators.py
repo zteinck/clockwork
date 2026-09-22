@@ -1,7 +1,7 @@
 from functools import wraps
 from time import perf_counter
 
-from oddments import validate_value
+from oddments import Validator
 
 from .utils import format_duration
 
@@ -25,7 +25,7 @@ def print_duration(indents=1, in_place=True):
 
     Returns
     ------------
-    out : any
+    result : any
         The decorated method's return value.
     '''
 
@@ -95,19 +95,18 @@ def print_duration(indents=1, in_place=True):
 
 
             # validate decorator arguments
-            validate_value(
-                value=indents,
-                name='indents',
+            (
+            Validator(
                 types=int,
                 min_value=0,
-                min_inclusive=True
+                min_inclusive=True,
                 )
+            .validate(
+                indents=indents
+                )
+            )
 
-            validate_value(
-                value=in_place,
-                name='in_place',
-                types=bool,
-                )
+            Validator(types=bool).validate(in_place=in_place)
 
             if self.verbose:
                 words = [
@@ -119,13 +118,13 @@ def print_duration(indents=1, in_place=True):
                 print_status()
                 start_time = perf_counter()
 
-            out = func(self, *args, **kwargs)
+            result = func(self, *args, **kwargs)
 
             if self.verbose:
                 duration = perf_counter() - start_time
                 print_status(duration)
 
-            return out
+            return result
 
         return wrapper
 

@@ -81,17 +81,18 @@ def temporal_format_to_regex(format, encase=False):
         regex pattern
     '''
 
-    odd.validate_value(
-        value=format,
-        name='format',
+    (
+    odd.Validator(
         types=str,
+        allow_blank=False,
+        require_stripped=True,
         )
+    .validate(
+        format=format
+        )
+    )
 
-    odd.validate_value(
-        value=encase,
-        name='encase',
-        types=bool,
-        )
+    odd.Validator(types=bool).validate(encase=encase)
 
     digit_pattern = lambda x: r'\d{%d}' % x
     mapping = {}

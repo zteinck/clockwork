@@ -7,6 +7,6 @@ class PrerequisiteError(Exception):
         super().__init__(message)
 
 
-class ContinueFailedJob(object):
+class ContinueFailedJob:
     ''' can be returned to continue running a failed job '''
     pass

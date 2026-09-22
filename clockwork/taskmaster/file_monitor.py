@@ -1,7 +1,7 @@
 from .utils import PrerequisiteError
 
 
-class FileMonitor(object):
+class FileMonitor:
     '''
     Description
     --------------------

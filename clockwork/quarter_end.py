@@ -1,7 +1,7 @@
 import datetime
 import re
 
-import oddments as odd
+from oddments import Validator, UNSET
 import polars as pl
 
 from .month_end import MonthEnd
@@ -12,16 +12,16 @@ class QuarterEnd(MonthEnd):
     '''
     Description
     --------------------
-    Quarter end timestamp object.
+    Quarter end date.
 
     Class Attributes
     --------------------
-    scheme : tuple
+    _scheme : tuple
         Quarter end months.
 
     Instance Attributes
     --------------------
-    ...
+    None
     '''
 
     #╭-------------------------------------------------------------------------╮
@@ -29,21 +29,66 @@ class QuarterEnd(MonthEnd):
     #╰-------------------------------------------------------------------------╯
 
     _increment = 3
-    scheme = (3, 6, 9, 12)
+    _scheme = (3, 6, 9, 12)
 
 
     #╭-------------------------------------------------------------------------╮
     #| Initialize Instance                                                     |
     #╰-------------------------------------------------------------------------╯
 
-    def __init__(self, arg=None, **kwargs):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+    #╭-------------------------------------------------------------------------╮
+    #| Properties                                                              |
+    #╰-------------------------------------------------------------------------╯
+
+    @property
+    def scheme(self):
+        return self._scheme
+
+
+    @property
+    def long_label(self):
+        return f'{self.year}Q{self.quarter}'
+
+
+    @property
+    def compact_label(self):
+        return f'{self.quarter}Q' + self.to_string('%y')
+
+
+    @property
+    def short_label(self):
+        return f'Q{self.quarter}'
+
+
+    @property
+    def quarter(self):
+        ''' the quarter number (1 to 4) '''
+        return int(self.scheme.index(self.month) + 1)
+
+
+    #╭-------------------------------------------------------------------------╮
+    #| Instance Methods                                                        |
+    #╰-------------------------------------------------------------------------╯
+
+    def _init_dt(
+        self,
+        source,
+        target_tz,
+        year=None,
+        month=None,
+        quarter=None,
+        **kwargs
+        ):
         '''
         Parameters
         ------------
-        arg : None | any
-            A scalar value to be interpreted as a quarter end date. Must be
-            None if 'year', 'month', or 'quarter' are provided. Refer to
-            '_to_datetime()' for supported input formats.
+        source : None | any
+            A value representing a quarter end date. Must be None if 'year',
+            'month', or 'quarter' are provided.
         year : int
             The calendar year of the quarter end date.
         month : int
@@ -55,81 +100,86 @@ class QuarterEnd(MonthEnd):
             Number of quarters to shift from the base quarter end. Base
             quarter end defaults to the most recently completed quarter end
             when no other parameters are provided. Use positive values to move
-            forward and negative values to move backward in time.
+            forward in time and negative values to move backward in time.
         kwargs : dict
-            Additional keyword arguments are forwarded to the Timestamp
-            constructor. Refer to its documentation for details.
+            Additional keyword arguments forwarded to the Timestamp
+            constructor.
         '''
-        qtr = kwargs.pop('quarter', None)
-        parsed = self.parse_label(arg)
 
-        if parsed is not None:
-            for k in ['year','quarter']:
-                if kwargs.get(k) is not None:
+        parsed_label = self._parse_label(source, target_tz)
+
+        if parsed_label is not None:
+            for k, v in {
+                'year': year,
+                'month': month,
+                'quarter': quarter,
+                }.items():
+                if v is not None:
                     raise ValueError(
-                        f"'{k}' must be None when 'arg' "
-                        "is a quarter label: {arg!r}."
+                        f"{k!r} must be None when 'source' is a quarter end "
+                        f"label: {source!r}."
                         )
 
-            kwargs['year'], qtr = parsed
-            arg = None
+            year, quarter = parsed_label
+            source = None
 
-        if qtr is not None:
-            if kwargs.get('month') is not None:
+        has_quarter = quarter is not None
+
+        if month is not None:
+            if has_quarter:
                 raise ValueError(
-                    "Cannot pass 'quarter' and 'month' "
-                    "arguments simultaneously."
+                    "Cannot pass 'quarter' and 'month' arguments "
+                    "simultaneously."
                     )
-            qtr = self._try_int(qtr)
-            kwargs['month'] = self.scheme[qtr - 1]
 
-        super().__init__(arg, **kwargs)
+            month = self._ensure_int(month)
 
+            # validate month
+            (
+            Validator(
+                types=int,
+                whitelist=self.scheme,
+                )
+            .validate(
+                month=month
+                )
+            )
 
-    #╭-------------------------------------------------------------------------╮
-    #| Properties                                                              |
-    #╰-------------------------------------------------------------------------╯
+        if has_quarter:
+            quarter = self._ensure_int(
+                value=quarter,
+                name='quarter',
+                )
+            month = self.scheme[quarter - 1]
 
-    @property
-    def long_label(self):
-        return f'{self.year}Q{self.qtr}'
+        super()._init_dt(
+            source=source,
+            target_tz=target_tz,
+            year=year,
+            month=month,
+            **kwargs
+            )
 
-
-    @property
-    def compact_label(self):
-        return f'{self.qtr}Q' + self.to_string('%y')
-
-
-    @property
-    def short_label(self):
-        return f'Q{self.qtr}'
-
-
-    @property
-    def quarter(self):
-        ''' the quarter number (1 to 4) '''
-        return int(self.scheme.index(self.month) + 1)
-
-
-    @property
-    def qtr(self):
-        ''' quarter alias '''
-        return self.quarter
-
-
-    #╭-------------------------------------------------------------------------╮
-    #| Instance Methods                                                        |
-    #╰-------------------------------------------------------------------------╯
 
     def _offset(self, year, month, offset):
-        year, month = self._backtrack_to_scheme(year, month)
-        return super()._offset(year, month, offset)
+        year, month = self._backtrack_to_scheme(
+            year=year,
+            month=month,
+            )
+
+        result = super()._offset(
+            year=year,
+            month=month,
+            offset=offset,
+            )
+
+        return result
 
 
-    def _validate_instance(self):
+    def _find_error(self):
         if self.month not in self.scheme:
-            return f'month ({self.month}) is not in scheme: {self.scheme}'
-        return super()._validate_instance()
+            return f'the month ({self.month}) is not in scheme: {self.scheme}'
+        return super()._find_error()
 
 
     #╭-------------------------------------------------------------------------╮
@@ -137,33 +187,19 @@ class QuarterEnd(MonthEnd):
     #╰-------------------------------------------------------------------------╯
 
     @classmethod
-    def _backtrack_to_scheme(cls, year, month):
-        ''' Backtracks from the given year and month, moving one month at a
-            time, until a month that is part of the scheme is found. '''
-        while month not in cls.scheme:
-            year, month = cls._get_prior_month(year, month)
-        return year, month
-
-
-    @classmethod
     def set_scheme(cls, value):
         ''' safely sets 'scheme' class attribute '''
 
         name = 'scheme'
 
-        odd.validate_value(
-            value=value,
-            name=name,
-            types=tuple
-            )
+        Validator(types=tuple).validate(value, name)
 
         if len(value) != 4:
             raise ValueError(
-                "'scheme' must contain 4 elements, "
-                f"got: {len(value):,}"
+                f"'scheme' must contain 4 elements, got: {len(value):,}"
                 )
 
-        value = tuple(map(cls._try_int, value))
+        value = tuple(map(cls._ensure_int, value))
         s = pl.Series(name=name, values=value)
 
         valid_increments = (
@@ -172,8 +208,8 @@ class QuarterEnd(MonthEnd):
 
         if not valid_increments:
             raise ValueError(
-                "'scheme' must be ascending in "
-                f"increments of 3. got: {value}."
+                "'scheme' must be ascending in increments of 3, got: "
+                f"{value!r}"
                 )
 
         valid_months = s.is_between(
@@ -184,15 +220,29 @@ class QuarterEnd(MonthEnd):
 
         if not valid_months:
             raise ValueError(
-                "'scheme' values must be between 1 "
-                f"and {MONTHS_IN_YEAR}, got: {value}."
+                f"'scheme' values must be between 1 and {MONTHS_IN_YEAR}, "
+                f"got: {value!r}."
                 )
 
-        cls.scheme = value
+        cls._scheme = value
 
 
     @classmethod
-    def parse_label(cls, x):
+    def _backtrack_to_scheme(cls, year, month):
+        ''' Backtracks from the given year and month, moving one month at a
+            time, until a month that is part of the scheme is found. '''
+
+        while month not in cls._scheme:
+            year, month = cls._get_prior_month(
+                year=year,
+                month=month,
+                )
+
+        return year, month
+
+
+    @classmethod
+    def _parse_label(cls, source, target_tz):
         '''
         Description
         ------------
@@ -202,55 +252,63 @@ class QuarterEnd(MonthEnd):
 
         Parameters
         ------------
-        x : str
+        source : str
             Quarter end label to parse.
+        target_tz : str | datetime.timezone
+            Refer to '_resolve_dt()' documentation.
 
         Returns
         ------------
         Returns None if input is not a string or parsing failed.
         Otherwise:
 
-        out : tuple
+        result : tuple
             year : int
                 The four-digit year.
-            qtr : int
+            quarter : int
                 The quarter number (1 to 4).
         '''
 
-        def extract_year_qtr(x):
-            if not isinstance(x, str): return
-            x = x.strip().upper()
+        def extract_year_and_quarter(value):
+            if not isinstance(value, str):
+                return None
 
-            # 'YYYYQ#'
-            match = re.fullmatch(r'(\d{4})Q(\d)', x)
-            if match: return match.groups()
+            value = value.strip().upper()
 
-            now = datetime.datetime.now()
+            # 'YYYYQ#' | 'YYYY Q#'
+            match = re.fullmatch(r'(\d{4})\s?Q(\d)', value)
+
+            if match:
+                return match.groups()
+
+            tz = None if target_tz is UNSET else target_tz
+            now = datetime.datetime.now(tz=tz)
 
             # '#QYY'
-            match = re.fullmatch(r'(\d)Q(\d{2})', x)
+            match = re.fullmatch(r'(\d)Q(\d{2})', value)
+
             if match:
-                qtr, yy = match.groups()
-                return f'{now.year // 100}{yy}', qtr
+                quarter, year = match.groups()
+                return f'{now.year // 100}{year}', quarter
 
             # 'Q#'
-            match = re.fullmatch(r'Q(\d)', x)
+            match = re.fullmatch(r'Q(\d)', value)
+
             if match:
-                qtr = match.group(1)
-                return str(now.year), qtr
+                quarter = match.group(1)
+                return f'{now.year}', quarter
 
 
-        parsed = extract_year_qtr(x)
+        parsed = extract_year_and_quarter(source)
 
         if parsed is None:
-            return
+            return None
 
-        year, qtr = map(cls._try_int, parsed)
+        year, quarter = (cls._ensure_int(x) for x in parsed)
 
-        if not (1 <= qtr <= 4):
+        if not (1 <= quarter <= 4):
             raise ValueError(
-                "Quarter must be between "
-                f"1 and 4, got: {qtr}"
+                f"Quarter must be between 1 and 4, got: {quarter}"
                 )
 
-        return year, qtr
+        return year, quarter

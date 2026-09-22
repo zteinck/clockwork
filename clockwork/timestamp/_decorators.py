@@ -3,30 +3,14 @@ from functools import wraps
 import oddments as odd
 
 
-def enable_inplace(func):
-    ''' Enables in-place updates '''
-
-    @wraps(func)
-    def wrapper(self, **kwargs):
-        params = {**kwargs}
-        inplace = params.pop('inplace', False)
-        dt = func(self, **params)
-
-        if inplace:
-            self.dt = dt
-        else:
-            return self.__class__(dt)
-
-    return wrapper
-
-
 def other_to_dt(func):
     ''' Converts the 'other' argument to a datetime object for use in magic
         methods. '''
 
     @wraps(func)
     def wrapper(self, other):
-        return func(self, self._to_datetime(other))
+        other_dt = self._make_base(other).to_datetime()
+        return func(self, other_dt)
 
     return wrapper
 
@@ -43,12 +27,16 @@ def other_to_delta(func):
             func.__name__.replace('_', '') == 'sub'
             and not isinstance(other, (dict, float, int))
             ):
-            return func(self, self._to_datetime(other))
+            other_dt = self._make_base(other).to_datetime()
+            delta = func(self, other_dt)
+            return delta
 
         # Otherwise, 'other' is assumed to be a delta and the resulting
         # Timestamp object is returned.
         delta = self._build_delta(other)
-        return self._make_base(func(self, delta))
+        dt = func(self, delta)
+        ts = self._make_base(dt)
+        return ts
 
     return wrapper
 
@@ -61,7 +49,7 @@ def skip_shift(func):
     def wrapper(self, forward=True):
         delta = 1 if forward else -1
         attr = 'is_' + '_'.join(func.__name__.split('_')[1:])[:-1]
-        obj = self.copy()
+        obj = self.clone()
 
         while getattr(obj, attr):
             obj = obj.shift(days=delta)
@@ -74,7 +62,7 @@ def skip_shift(func):
 def handle_next_last(func):
     ''' Facilitates shifting based on specific weekdays '''
 
-    def wrapper(self, arg, offset=0):
+    def wrapper(self, value, offset=0):
         '''
         Description
         ------------
@@ -85,8 +73,8 @@ def handle_next_last(func):
 
         Parameters
         ------------
-        arg : str
-            Day of the week either fully spelled out or the first three
+        value : str
+            Day of the week either fully spelled result or the first three
             characters (e.g. 'Friday' or 'Fri') not case-sensitive. Also
             supports period ends (e.g. 'QE', 'ME').
         offset : int
@@ -100,25 +88,31 @@ def handle_next_last(func):
             Timestamp instance
         '''
 
-        odd.validate_value(
-            value=arg,
-            name='arg',
-            types=str
+        (
+        odd.Validator(
+            types=str,
+            allow_blank=False,
+            require_stripped=True,
             )
+        .validate(
+            value=value
+            )
+        )
 
         kind = func.__name__
 
         # try weekday
-        target = self.get_weekday_index(arg)
+        target = self.get_weekday_index(value)
 
         if target is not None:
             actual = self.weekday_index
             weeks = func(actual - target) + offset
-            return (
+            result = (
                 self
                 .shift(days=-actual)
                 .shift(days=target, weeks=weeks)
                 )
+            return result
 
         # try period end
         pe_map = {
@@ -126,7 +120,7 @@ def handle_next_last(func):
             'me': 'last_month_end',
             }
 
-        pe_attr = pe_map.get(arg.lower())
+        pe_attr = pe_map.get(value.lower())
 
         if pe_attr is not None:
             obj = getattr(self, pe_attr)
@@ -135,7 +129,7 @@ def handle_next_last(func):
             return obj.offset(offset)
 
         raise ValueError(
-            f"'arg' not recognized: '{arg}'"
+            f"'value' not recognized: {value!r}"
             )
 
     return wrapper
@@ -154,9 +148,9 @@ def to_period_end(func):
         Parameters
         ------------
         strict : bool
-            If True, an exception is raised if self does not already align
-                with a period end date.
-            If False, self will be coerced to a period end date.
+            If True, an exception is raised if the date does not align with a
+                period end date.
+            If False, the date will  will be coerced to a period end date.
 
         Returns
         ------------
@@ -171,13 +165,19 @@ def to_period_end(func):
 
         if strict and not getattr(self, f'is_{kind}_end'):
             raise ValueError(
-                f"Conversion to {kind} end failed because "
-                f"{self.ymd!r} does not align with a {kind} "
-                "end date. To convert anyway, use 'strict=False'."
+                f"Conversion to {kind} end failed because {self.ymd} does "
+                f"not align with a {kind} end date. To convert anyway, use "
+                "'strict=False'."
                 )
 
-        pe_cls = getattr(self, f'_get_{kind}_end_cls')()
-        period_end = pe_cls(year=self.year, month=self.month)
+        period_end_cls = getattr(self, f'_get_{kind}_end_cls')()
+
+        period_end = period_end_cls(
+            year=self.year,
+            month=self.month,
+            target_tz=self.tz,
+            )
+
         return period_end
 
     return wrapper

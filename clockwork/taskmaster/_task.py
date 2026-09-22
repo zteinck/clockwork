@@ -13,7 +13,7 @@ from .utils import (
     )
 
 
-class Task(object):
+class Task:
     '''
     Description
     --------------------
@@ -211,9 +211,9 @@ class Task(object):
 
                 if self.disable_print:
                     with redirect_stdout(open(os.devnull, 'w')):
-                        out = self.func(*self.args, **self.kwargs)
+                        result = self.func(*self.args, **self.kwargs)
                 else:
-                    out = self.func(*self.args, **self.kwargs)
+                    result = self.func(*self.args, **self.kwargs)
 
                 if self.verbose:
                     elapsed = format_duration(time.time() - start)
@@ -230,7 +230,7 @@ class Task(object):
                 if self.cancel_on_completion:
                     update_status('cancelled on completion', set_inactive=True)
 
-                return CancelJob if self.cancel_on_completion else out
+                return CancelJob if self.cancel_on_completion else result
 
             except Exception as e:
 

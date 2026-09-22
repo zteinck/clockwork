@@ -13,7 +13,7 @@ from ._task import Task
 #| Classes                                                                 |
 #╰-------------------------------------------------------------------------╯
 
-class TaskMaster(object):
+class TaskMaster:
     '''
     Description
     --------------------
@@ -169,7 +169,10 @@ class TaskMaster(object):
             cls.scheduler = TaskScheduler()
 
         now = Timestamp()
-        if (start and start > now) or (expiry and expiry < now): return
+
+        if (start and start > now) or (expiry and expiry < now):
+            return
+
         expiry_str = expiry.dt.strftime('%Y-%m-%d %I:%M:%S.{} %p')\
                      .format('%03d' % (expiry.dt.microsecond / 1000))\
                      if expiry else None
@@ -224,7 +227,8 @@ class TaskMaster(object):
             )
         try:
             active = int(cls.db.c.execute(sql, tuple(params)).fetchone()[0])
-            if active == 0: return False
+            if active == 0:
+                return False
         except:
             pass
         return True
