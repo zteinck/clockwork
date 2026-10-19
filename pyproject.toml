@@ -1,6 +1,6 @@
 [project]
 name = "clockwork"
-version = "0.7.0"
+version = "0.7.1"
 description = "Toolkit for time-related operations including scheduling, logging, date manipulation, and more."
 authors = [
     { name = "Zachary Einck", email = "zacharyeinck@gmail.com" }
@@ -9,12 +9,12 @@ license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "holidays>=0.106",
+    "numpy>=2.5.4",
+    "oddments>=0.10.1",
+    "pandas>=3.0.6",
+    "polars>=2.0.0",
     "python-dateutil>=2.9.0.post0",
-    "holidays>=0.94",
-    "numpy>=2.4.4",
-    "oddments>=0.10.0",
-    "pandas>=3.0.2",
-    "polars>=1.39.3",
     "schedule>=1.2.2",
 ]
 
